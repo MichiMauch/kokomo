@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { motion, useScroll, useSpring } from 'framer-motion'
 import { ChevronRight, Tags } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { poppins } from '../lib/fonts'
 
 interface Post {
   slug: string
@@ -55,7 +56,8 @@ export default function Home({ posts }: { posts: Post[] }) {
     <div
       className={cn(
         'min-h-screen transition-colors duration-500',
-        isDark ? 'dark bg-gray-900' : 'bg-gray-50'
+        isDark ? 'dark bg-gray-900' : 'bg-gray-50',
+        poppins.variable
       )}
     >
       {/* Progress Bar */}
@@ -75,12 +77,12 @@ export default function Home({ posts }: { posts: Post[] }) {
           <Image
             src="/static/images/logo.svg"
             alt={siteMetadata.headerTitle}
-            width={400}
-            height={100}
+            width={500}
+            height={125}
             className="mx-auto mb-6"
             priority
           />
-          <p className="mx-auto max-w-2xl text-xl text-black dark:text-gray-300">
+          <p className="font-poppins mx-auto max-w-2xl text-xl text-black dark:text-gray-300">
             {siteMetadata.description}
           </p>
         </motion.div>

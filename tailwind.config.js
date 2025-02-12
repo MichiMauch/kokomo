@@ -4,6 +4,10 @@
 module.exports = {
   theme: {
     extend: {
+      fontFamily: {
+        roboto: ['var(--font-roboto)'],
+        poppins: ['var(--font-poppins)'],
+      },
       colors: {
         secondary: {
           50: '#E3F8FF',
