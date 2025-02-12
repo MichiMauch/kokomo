@@ -3,7 +3,7 @@ const siteMetadata = {
   title: 'KOKOMO House',
   author: 'Michi',
   headerTitle: 'KOKOMO House',
-  description: 'Der Tiny House Blog - KOKOMO House',
+  description: 'Der Tiny House Blog',
   language: 'de-CH',
   theme: 'system', // system, dark or light
   siteUrl: 'https://tailwind-nextjs-starter-blog.vercel.app',
@@ -11,7 +11,7 @@ const siteMetadata = {
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/kokomo-bildmarke.svg`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   mastodon: 'https://mastodon.social/@mastodonuser',
-  email: 'address@yoursite.com',
+  email: 'michi.mauch@gmail.com',
   github: 'https://github.com',
   x: 'https://twitter.com/x',
   // twitter: 'https://twitter.com/Twitter',

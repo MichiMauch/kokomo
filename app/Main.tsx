@@ -75,8 +75,8 @@ export default function Home({ posts }: { posts: Post[] }) {
           <Image
             src="/static/images/logo.svg"
             alt={siteMetadata.headerTitle}
-            width={500}
-            height={125}
+            width={400}
+            height={100}
             className="mx-auto mb-6"
             priority
           />
@@ -177,8 +177,11 @@ export default function Home({ posts }: { posts: Post[] }) {
               transition={{ duration: 0.5 }}
               className="group relative flex transform flex-col overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl lg:col-span-2 dark:bg-gray-800"
             >
-              <Link href={`/tiny-house/${filteredPosts[0].slug}`} className="flex h-full flex-col">
-                <div className="relative aspect-[16/9] overflow-hidden">
+              <div className="flex h-full flex-col">
+                <Link
+                  href={`/tiny-house/${filteredPosts[0].slug}`}
+                  className="relative aspect-[16/9] overflow-hidden"
+                >
                   <Image
                     src={
                       typeof filteredPosts[0].images === 'string'
@@ -190,27 +193,35 @@ export default function Home({ posts }: { posts: Post[] }) {
                     height={510}
                     className="h-full w-full transform object-cover transition-transform duration-300 group-hover:scale-110"
                   />
-                </div>
-                <div className="flex flex-1 flex-col justify-end p-6">
+                </Link>
+                <div className="flex flex-1 flex-col justify-end p-4">
                   <time className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(filteredPosts[0].date, siteMetadata.locale)}
                   </time>
-                  <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredPosts[0].title}
-                  </h2>
+                  <Link href={`/tiny-house/${filteredPosts[0].slug}`}>
+                    <h2 className="group-hover:text-primary-500 dark:group-hover:text-primary-400 mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                      {filteredPosts[0].title}
+                    </h2>
+                  </Link>
+                  <Link
+                    href={`/tiny-house/${filteredPosts[0].slug}`}
+                    className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mt-2 inline-flex items-center"
+                  >
+                    Lesen <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
                 </div>
-              </Link>
+              </div>
             </motion.article>
 
             {/* Recent Posts List */}
-            <div className="flex h-full flex-col justify-between space-y-4">
+            <div className="flex h-full flex-col justify-between space-y-2">
               {filteredPosts.slice(1, 4).map((post, idx) => (
                 <motion.article
                   key={post.slug}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="group flex flex-1 transform flex-col justify-center rounded-2xl bg-white p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:bg-gray-800"
+                  className="group flex flex-1 transform flex-col justify-center rounded-2xl bg-white p-4 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:bg-gray-800"
                 >
                   <time className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(post.date, siteMetadata.locale)}
@@ -219,6 +230,12 @@ export default function Home({ posts }: { posts: Post[] }) {
                     <h3 className="group-hover:text-primary-500 dark:group-hover:text-primary-400 mt-1 text-lg font-semibold text-gray-900 transition-colors dark:text-white">
                       {post.title}
                     </h3>
+                  </Link>
+                  <Link
+                    href={`/tiny-house/${post.slug}`}
+                    className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mt-2 inline-flex items-center"
+                  >
+                    Lesen <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
                 </motion.article>
               ))}
