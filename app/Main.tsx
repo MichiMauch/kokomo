@@ -72,12 +72,15 @@ export default function Home({ posts }: { posts: Post[] }) {
           transition={{ duration: 0.8 }}
           className="relative z-10 mx-auto max-w-7xl text-center"
         >
-          <h1
-            className={`from-primary-500 to-primary-600 mb-6 bg-gradient-to-r bg-clip-text text-5xl font-black text-transparent md:text-7xl`}
-          >
-            {siteMetadata.headerTitle}
-          </h1>
-          <p className={`mx-auto max-w-2xl text-xl text-black dark:text-gray-300`}>
+          <Image
+            src="/static/images/logo.svg"
+            alt={siteMetadata.headerTitle}
+            width={500}
+            height={125}
+            className="mx-auto mb-6"
+            priority
+          />
+          <p className="mx-auto max-w-2xl text-xl text-black dark:text-gray-300">
             {siteMetadata.description}
           </p>
         </motion.div>
