@@ -50,7 +50,6 @@ const CustomImage = ({ src, alt, width, height, className, ...props }: CustomIma
 export const components: MDXComponents = {
   Image: CustomImage,
   TOCInline,
-  a: CustomLink,
   pre: Pre,
   table: TableWrapper,
   BlogNewsletterForm,
