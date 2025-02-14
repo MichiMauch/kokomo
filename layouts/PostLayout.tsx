@@ -30,7 +30,16 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags } = content
+  const { filePath, path, slug, date, title, tags, images } = content
+
+  const isValidUrl = (urlString) => {
+    try {
+      return Boolean(new URL(urlString))
+    } catch (e) {
+      return false
+    }
+  }
+
   const basePath = path.split('/')[0]
 
   return (
@@ -44,7 +53,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                 <div>
                   <dt className="sr-only">Published on</dt>
                   <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
-                    <time dateTime={date}>
+                    <time className="text-brand-blue" dateTime={date}>
                       {new Date(date).toLocaleDateString(siteMetadata.locale, postDateTemplate)}
                     </time>
                   </dd>
@@ -52,6 +61,15 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               </dl>
               <div>
                 <PageTitle>{title}</PageTitle>
+                {images && isValidUrl(images) && (
+                  <Image
+                    src={images}
+                    alt={title}
+                    width={800} // Beispielbreite, anpassen nach Bedarf
+                    height={450} // Beispielhöhe, anpassen nach Bedarf
+                    className="mx-auto mt-4 rounded-2xl"
+                  />
+                )}
               </div>
             </div>
           </header>
@@ -130,7 +148,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                     {prev && prev.path && (
                       <div>
                         <h2 className="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                          Previous Article
+                          Vorheriger Post
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${prev.path}`}>{prev.title}</Link>
@@ -140,7 +158,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                     {next && next.path && (
                       <div>
                         <h2 className="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                          Next Article
+                          Nächster Post
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${next.path}`}>{next.title}</Link>
@@ -156,7 +174,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                   className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
                   aria-label="Back to the blog"
                 >
-                  &larr; Back to the blog
+                  &larr; Zurück zur Übersicht
                 </Link>
               </div>
             </footer>

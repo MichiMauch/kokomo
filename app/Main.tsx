@@ -261,6 +261,7 @@ export default function Home({ posts }: { posts: Post[] }) {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 className="group relative transform overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:bg-gray-800"
               >
+                <Link href={`/tiny-house/${slug}`} className="absolute inset-0 z-10" />
                 {imageUrl && (
                   <div className="aspect-video overflow-hidden">
                     <Image
@@ -276,7 +277,9 @@ export default function Home({ posts }: { posts: Post[] }) {
                   <time className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(date, siteMetadata.locale)}
                   </time>
-                  <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+                  <h2 className="group-hover:text-primary-500 dark:group-hover:text-primary-400 mt-2 text-xl font-bold text-gray-900 transition-colors dark:text-white">
+                    {title}
+                  </h2>
                   <p className="mt-3 line-clamp-3 text-gray-600 dark:text-gray-300">{summary}</p>
                   <Link
                     href={`/tiny-house/${slug}`}
