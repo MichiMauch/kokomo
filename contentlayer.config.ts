@@ -1,9 +1,12 @@
+import remarkImagePath from './lib/remark-image-path.mjs' // Neu: ersetzt {IMAGE_PATH} in Bildpfaden
+import remarkGroupImages from './lib/remark-group-images.mjs' // neues Plugin
 import { defineDocumentType, ComputedFields, makeSource } from 'contentlayer2/source-files'
 import { writeFileSync } from 'fs'
 import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
 import { fromHtmlIsomorphic } from 'hast-util-from-html-isomorphic'
+
 // Remark packages
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -14,6 +17,7 @@ import {
   remarkImgToJsx,
   extractTocHeadings,
 } from 'pliny/mdx-plugins/index.js'
+
 // Rehype packages
 import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
@@ -157,6 +161,8 @@ export default makeSource({
       remarkGfm,
       remarkCodeTitles,
       remarkMath,
+      remarkImagePath, // ersetzt {IMAGE_PATH}
+      remarkGroupImages, // gruppiert aufeinanderfolgende Bilder
       remarkImgToJsx,
       remarkAlert,
     ],

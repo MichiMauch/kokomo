@@ -1,8 +1,16 @@
 import { withContentlayer } from 'next-contentlayer2';
 import withBundleAnalyzer from '@next/bundle-analyzer';
+import withMDX from '@next/mdx';
+import remarkImagePath from './lib/remark-image-path.mjs';
+import remarkGroupImages from './lib/remark-group-images.mjs';
 
 const bundleAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
+});
+
+const withMDXConfig = withMDX({
+  extension: /\.mdx?$/,
+  remarkPlugins: [remarkImagePath, remarkGroupImages],
 });
 
 // You might need to insert additional domains in script-src if you are using external services
@@ -56,7 +64,9 @@ const unoptimized = process.env.UNOPTIMIZED ? true : undefined;
  * @type {import('next/dist/next-server/server/config').NextConfig}
  */
 const nextConfig = () => {
-  const plugins = [withContentlayer, bundleAnalyzer];
+  // Die Reihenfolge der Plugins kann wichtig sein – hier werden
+  // withContentlayer, withMDXConfig und bundleAnalyzer nacheinander angewendet.
+  const plugins = [withContentlayer, withMDXConfig, bundleAnalyzer];
   return plugins.reduce((acc, next) => next(acc), {
     output,
     basePath,

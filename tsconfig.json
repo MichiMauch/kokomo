@@ -44,7 +44,8 @@
     "postcss.config.cjs",
     "next.config.cjs",
     "eslint.config.cjs",
-    "prettier.config.cjs"
+    "prettier.config.cjs",
+    "app/test/page.tsx.ori"
   ],
   "exclude": ["node_modules"]
 }
