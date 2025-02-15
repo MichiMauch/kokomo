@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
-import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import React from 'react'
+import ImageList from '@mui/material/ImageList'
+import ImageListItem from '@mui/material/ImageListItem'
+import Box from '@mui/material/Box'
+import Modal from '@mui/material/Modal'
 
 interface CustomImageProps {
   src: string
@@ -22,7 +24,6 @@ interface GalleryProps {
 const normalizeImageUrl = (src: string): string => {
   if (src.startsWith('http')) return src
 
-  // Decode URL-encoded brackets first
   const decodedSrc = src.replace(/%7B/g, '{').replace(/%7D/g, '}')
 
   return decodedSrc
@@ -31,129 +32,185 @@ const normalizeImageUrl = (src: string): string => {
     .replace(/([^:]\/)\/+/g, '$1')
 }
 
-// Komponente als Galerie exportieren
+// Angepasste srcset Funktion ohne zusätzliche Spacing-Parameter
+function srcset(image: string, size: number, rows = 1, cols = 1) {
+  return {
+    src: image,
+    srcSet: `${image} 2x`,
+  }
+}
+
+const getImagePattern = (index: number) => {
+  const patterns = [
+    { rows: 2, cols: 2 },
+    { rows: 1, cols: 1 },
+    { rows: 1, cols: 1 },
+    { rows: 1, cols: 2 },
+    { rows: 1, cols: 2 },
+    { rows: 2, cols: 2 },
+    { rows: 1, cols: 1 },
+    { rows: 1, cols: 1 },
+    { rows: 2, cols: 2 },
+    { rows: 1, cols: 1 },
+    { rows: 1, cols: 1 },
+    { rows: 1, cols: 2 },
+  ]
+  return patterns[index % patterns.length]
+}
+
 export function Galerie({ images = [], className }: GalleryProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [open, setOpen] = React.useState(false)
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
 
-  console.log('Galerie received raw images:', images) // Debug log
-
-  // Only render if we have images
   if (!images || images.length === 0) {
     console.warn('Galerie: No images provided')
     return null
   }
 
-  const processedImages = images.map((img, index) => {
-    if (typeof img === 'string') {
-      const normalizedSrc = normalizeImageUrl(img)
-      console.log('Processing string image:', { original: img, normalized: normalizedSrc })
-      return (
-        <Image
-          key={`image-${index}`}
-          src={normalizedSrc || '/placeholder.svg'}
-          alt={`Image ${index + 1}`}
-          width={800}
-          height={600}
-          className="object-cover"
-        />
-      )
-    }
+  const processedImages = images
+    .map((img, index) => {
+      let src = ''
+      let alt = ''
 
-    if ('src' in img && typeof img.src === 'string') {
-      const normalizedSrc = normalizeImageUrl(img.src)
-      console.log('Processing object image:', { original: img.src, normalized: normalizedSrc })
-      return (
-        <Image
-          key={`image-${index}`}
-          src={normalizedSrc || '/placeholder.svg'}
-          alt={img.alt || `Image ${index + 1}`}
-          width={800}
-          height={600}
-          className="object-cover"
-        />
-      )
-    }
-
-    // Wenn es bereits ein React Element ist
-    if (React.isValidElement(img)) {
-      const element = img as React.ReactElement<CustomImageProps>
-      if (element.props?.src) {
-        const normalizedSrc = normalizeImageUrl(element.props.src)
-        console.log('Processing React element image:', {
-          original: element.props.src,
-          normalized: normalizedSrc,
-        })
-        return React.cloneElement(element, {
-          ...element.props,
-          src: normalizedSrc,
-          className: `object-cover w-full h-full ${element.props.className || ''}`,
-        })
+      if (typeof img === 'string') {
+        src = normalizeImageUrl(img)
+        alt = `Image ${index + 1}`
+      } else if ('src' in img && typeof img.src === 'string') {
+        src = normalizeImageUrl(img.src)
+        alt = img.alt || `Image ${index + 1}`
+      } else if (React.isValidElement(img)) {
+        const element = img as React.ReactElement<CustomImageProps>
+        if (element.props?.src) {
+          src = normalizeImageUrl(element.props.src)
+          alt = element.props.alt || `Image ${index + 1}`
+        }
       }
-    }
 
-    return img
-  })
+      const pattern = getImagePattern(index)
 
-  const goToNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % processedImages.length)
+      return {
+        img: src,
+        title: alt,
+        rows: pattern.rows,
+        cols: pattern.cols,
+      }
+    })
+    .filter((img) => img.img)
+
+  const handleOpen = (imageSrc: string) => {
+    setSelectedImage(imageSrc)
+    setOpen(true)
   }
 
-  const goToPrevious = () => {
-    setCurrentIndex(
-      (prevIndex) => (prevIndex - 1 + processedImages.length) % processedImages.length
-    )
+  const handleClose = () => {
+    setOpen(false)
+    setSelectedImage(null)
   }
 
   return (
-    <div className={`group relative aspect-[4/3] w-full ${className || ''}`}>
-      <div className="relative h-full w-full overflow-hidden rounded-lg">
-        {processedImages.map((imageElement, index) => (
-          <div
-            key={`slide-${index}`}
-            className={`absolute h-full w-full transition-transform duration-300 ease-in-out ${
-              index === currentIndex
-                ? 'translate-x-0'
-                : index < currentIndex
-                  ? '-translate-x-full'
-                  : 'translate-x-full'
-            }`}
+    <div className={className}>
+      <ImageList
+        sx={{
+          width: '100%',
+          height: 'auto',
+          overflow: 'visible',
+          m: '-1px', // Negativer Margin um Gaps zu kompensieren
+          p: 0,
+          gap: 0,
+          '& .MuiImageListItem-root': {
+            overflow: 'hidden',
+            p: 0,
+            m: 0,
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              border: '1px solid transparent',
+            },
+            '& img': {
+              width: 'calc(100% + 2px)', // Leicht übergroß um Gaps zu vermeiden
+              height: 'calc(100% + 2px)',
+              margin: '-1px',
+              objectFit: 'cover',
+              display: 'block',
+              borderRadius: 0,
+            },
+          },
+        }}
+        variant="quilted"
+        cols={4}
+        rowHeight={121}
+      >
+        {processedImages.map((item, index) => (
+          <ImageListItem
+            key={item.img + index}
+            cols={item.cols}
+            rows={item.rows}
+            sx={{
+              cursor: 'pointer',
+              overflow: 'hidden',
+            }}
+            onClick={() => handleOpen(item.img)}
           >
-            {React.cloneElement(imageElement as React.ReactElement<CustomImageProps>, {
-              priority: index === currentIndex,
-            })}
-          </div>
+            <img
+              {...srcset(item.img, 121, item.rows, item.cols)}
+              alt={item.title}
+              loading="lazy"
+              style={{
+                width: 'calc(100% + 2px)',
+                height: 'calc(100% + 2px)',
+                margin: '-1px',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          </ImageListItem>
         ))}
-      </div>
-      {processedImages.length > 1 && (
-        <>
-          <button
-            onClick={goToPrevious}
-            className="absolute top-1/2 left-4 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100"
-            aria-label="Previous image"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            onClick={goToNext}
-            className="absolute top-1/2 right-4 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100"
-            aria-label="Next image"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-            {processedImages.map((_, index) => (
-              <button
-                key={`dot-${index}`}
-                onClick={() => setCurrentIndex(index)}
-                className={`h-2 w-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-                aria-label={`Go to image ${index + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      </ImageList>
+
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="image-modal"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            outline: 'none',
+            position: 'relative',
+            '& img': {
+              borderRadius: '8px',
+              boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
+            },
+          }}
+          onClick={handleClose}
+        >
+          {selectedImage && (
+            <img
+              src={selectedImage || '/placeholder.svg'}
+              alt="Full size"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+              }}
+            />
+          )}
+        </Box>
+      </Modal>
     </div>
   )
 }
