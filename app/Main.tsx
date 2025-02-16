@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from '@/components/Link'
 import siteMetadata from '@/data/siteMetadata'
 import { formatDate } from 'pliny/utils/formatDate'
-import NewsletterForm from 'pliny/ui/NewsletterForm'
+import { NewsletterForm } from '@/components/NewsletterForm'
 import Image from 'next/image'
 import { motion, useScroll, useSpring } from 'framer-motion'
 import { ChevronRight, Tags, X } from 'lucide-react'
@@ -68,11 +68,6 @@ export default function Home({ posts }: { posts: Post[] }) {
       </div>
     )
   }
-
-  // Debug logging
-  console.log('Selected Tags:', selectedTags)
-  console.log('Filtered Posts:', filteredPosts.length)
-  console.log('First Post Tags:', filteredPosts[0]?.tags)
 
   return (
     <div
@@ -274,20 +269,6 @@ export default function Home({ posts }: { posts: Post[] }) {
           allPosts={filteredPosts.slice(4)}
         />
       </div>
-
-      {/* Newsletter */}
-      {siteMetadata.newsletter?.provider && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-          className="mx-auto max-w-7xl px-6 py-12"
-        >
-          <div className="rounded-2xl bg-gray-100 p-8 dark:bg-gray-800">
-            <NewsletterForm />
-          </div>
-        </motion.div>
-      )}
     </div>
   )
 }
