@@ -10,6 +10,8 @@ import { motion, useScroll, useSpring } from 'framer-motion'
 import { ChevronRight, Tags, X } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { poppins } from '../lib/fonts'
+import tagData from 'app/tag-data.json'
+import { InfiniteScroll } from '@/components/InfiniteScroll'
 
 interface Post {
   slug: string
@@ -18,17 +20,17 @@ interface Post {
   summary: string
   tags: string[]
   images?: string | string[]
+  draft?: boolean
 }
-
-const MAX_DISPLAY = 10
 
 export default function Home({ posts }: { posts: Post[] }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isDark, setIsDark] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Get all unique tags
-  const allTags = Array.from(new Set(posts.flatMap((post) => post.tags)))
+  // Get all tags from tag-data.json
+  const tagCounts = tagData as Record<string, number>
+  const allTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a])
 
   // Scroll progress indicator
   const { scrollYProgress } = useScroll()
@@ -47,10 +49,30 @@ export default function Home({ posts }: { posts: Post[] }) {
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
-  // Filter posts by selected tags
-  const filteredPosts = posts.filter(
-    (post) => selectedTags.length === 0 || post.tags.some((tag) => selectedTags.includes(tag))
-  )
+  // Filter posts by selected tags and exclude drafts
+  const filteredPosts = posts
+    .filter((post) => post.draft !== true)
+    .filter((post) => {
+      // Wenn keine Tags ausgewählt sind, zeige alle Posts
+      if (selectedTags.length === 0) return true
+
+      // Ein Post wird angezeigt, wenn er mindestens einen der ausgewählten Tags hat
+      return selectedTags.some((tag) => post.tags?.includes(tag))
+    })
+
+  // Nur fortfahren wenn gefilterte Posts vorhanden sind
+  if (filteredPosts.length === 0) {
+    return (
+      <div className="flex h-96 items-center justify-center text-gray-500 dark:text-gray-400">
+        Keine Artikel verfügbar
+      </div>
+    )
+  }
+
+  // Debug logging
+  console.log('Selected Tags:', selectedTags)
+  console.log('Filtered Posts:', filteredPosts.length)
+  console.log('First Post Tags:', filteredPosts[0]?.tags)
 
   return (
     <div
@@ -94,7 +116,6 @@ export default function Home({ posts }: { posts: Post[] }) {
             transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
           }}
         >
-          {/* Main floating shapes */}
           {[...Array(5)].map((_, i) => {
             const baseX = i === 0 ? 0 : i === 1 ? 25 : i === 2 ? 50 : i === 3 ? 75 : 90
             const baseY = i === 0 ? 10 : i === 1 ? 40 : i === 2 ? 20 : i === 3 ? 50 : 30
@@ -143,9 +164,8 @@ export default function Home({ posts }: { posts: Post[] }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
         className="sticky top-0 z-30 border-b border-gray-200 bg-white/80 py-4 backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80"
-        style={{ scrollbarColor: '#05DE66 #E3F9ED', scrollbarWidth: 'thin' }}
       >
-        <div className="scrollbar-thin scrollbar-thumb-primary-500 scrollbar-track-gray-200 dark:scrollbar-track-gray-700 mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-6 pb-2">
+        <div className="scrollbar-thin scrollbar-thumb-primary-500 scrollbar-track-primary-100 dark:scrollbar-track-primary-700 mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-6 pb-2">
           <Tags className="h-5 w-5" />
           {allTags.map((tag) => (
             <button
@@ -162,7 +182,8 @@ export default function Home({ posts }: { posts: Post[] }) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
               )}
             >
-              {tag}
+              {/* Ersetze Bindestriche durch Leerzeichen in der Anzeige */}
+              {`${tag.replace(/-/g, ' ')} (${tagCounts[tag]})`}
               {selectedTags.includes(tag) && <X className="ml-2 h-4 w-4" />}
             </button>
           ))}
@@ -247,68 +268,11 @@ export default function Home({ posts }: { posts: Post[] }) {
           </div>
         )}
 
-        {/* Regular Posts Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPosts.slice(4, MAX_DISPLAY).map((post, idx) => {
-            const { slug, date, title, summary, images } = post
-            const imageUrl = typeof images === 'string' ? images : null
-
-            return (
-              <motion.article
-                key={slug}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group relative transform overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:bg-gray-800"
-              >
-                <Link href={`/tiny-house/${slug}`} className="absolute inset-0 z-10" />
-                {imageUrl && (
-                  <div className="aspect-video overflow-hidden">
-                    <Image
-                      src={imageUrl || '/placeholder.svg'}
-                      alt={title}
-                      width={700}
-                      height={475}
-                      className="h-full w-full transform object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <time className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(date, siteMetadata.locale)}
-                  </time>
-                  <h2 className="group-hover:text-primary-500 dark:group-hover:text-primary-400 mt-2 text-xl font-bold text-gray-900 transition-colors dark:text-white">
-                    {title}
-                  </h2>
-                  <p className="mt-3 line-clamp-3 text-gray-600 dark:text-gray-300">{summary}</p>
-                  <Link
-                    href={`/tiny-house/${slug}`}
-                    className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mt-4 inline-flex items-center"
-                  >
-                    Read more <ChevronRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </div>
-              </motion.article>
-            )
-          })}
-        </div>
-
-        {/* View All Posts */}
-        {posts.length > MAX_DISPLAY && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-12 text-center"
-          >
-            <Link
-              href="/tiny-house"
-              className="bg-primary-500 hover:bg-primary-600 inline-flex items-center justify-center rounded-full px-8 py-3 text-base font-medium text-white transition-colors"
-            >
-              View All Posts <ChevronRight className="ml-2 h-5 w-5" />
-            </Link>
-          </motion.div>
-        )}
+        {/* Infinite Scroll Posts */}
+        <InfiniteScroll
+          initialPosts={filteredPosts.slice(4, 13)}
+          allPosts={filteredPosts.slice(4)}
+        />
       </div>
 
       {/* Newsletter */}
