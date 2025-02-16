@@ -165,7 +165,7 @@ export default function Home({ posts }: { posts: Post[] }) {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="sticky top-0 z-30 border-b border-gray-200 bg-white/80 py-4 backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80"
       >
-        <div className="scrollbar-thin scrollbar-thumb-primary-500 scrollbar-track-primary-100 dark:scrollbar-track-primary-700 mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-6 pb-2">
+        <div className="scrollbar scrollbar-w-2 scrollbar-thumb-primary-500 mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-6 pb-2">
           <Tags className="h-5 w-5" />
           {allTags.map((tag) => (
             <button
