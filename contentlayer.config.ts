@@ -1,6 +1,6 @@
 import remarkImagePath from './lib/remark-image-path.mjs' // Neu: ersetzt {IMAGE_PATH} in Bildpfaden
 import remarkGroupImages from './lib/remark-group-images.mjs' // neues Plugin
-import { defineDocumentType, ComputedFields, makeSource } from 'contentlayer2/source-files'
+import { defineDocumentType, type ComputedFields, makeSource } from 'contentlayer2/source-files'
 import { writeFileSync } from 'fs'
 import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
@@ -151,9 +151,30 @@ export const Authors = defineDocumentType(() => ({
   computedFields,
 }))
 
+export const Newsletter = defineDocumentType(() => ({
+  name: 'Newsletter',
+  filePathPattern: 'newsletter/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    name: { type: 'string', required: true },
+    avatar: { type: 'string' },
+    occupation: { type: 'string' },
+    company: { type: 'string' },
+    email: { type: 'string' },
+    twitter: { type: 'string' },
+    instagram: { type: 'string' },
+    linkedin: { type: 'string' },
+    facebook: { type: 'string' },
+    title: { type: 'string', required: true },
+    description: { type: 'string' },
+    layout: { type: 'string' },
+  },
+  computedFields,
+}))
+
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors],
+  documentTypes: [Blog, Authors, Newsletter], // Newsletter hinzugefügt
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [
@@ -161,8 +182,8 @@ export default makeSource({
       remarkGfm,
       remarkCodeTitles,
       remarkMath,
-      remarkImagePath, // ersetzt {IMAGE_PATH}
-      remarkGroupImages, // gruppiert aufeinanderfolgende Bilder
+      remarkImagePath,
+      remarkGroupImages,
       remarkImgToJsx,
       remarkAlert,
     ],

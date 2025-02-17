@@ -1,4 +1,5 @@
 import type React from 'react'
+import Script from 'next/script'
 import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
@@ -21,7 +22,8 @@ const Poppins = PoppinsFont({
 })
 
 export const metadata: Metadata = {
-  // ... (behalte den bestehenden Metadata-Code bei)
+  title: 'Kokomo House',
+  description: 'Tiny House Blog und mehr',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +35,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${Poppins.variable} scroll-smooth`}
       suppressHydrationWarning
     >
-      {/* ... (behalte die bestehenden Link-Tags bei) */}
+      <head>
+        <Script id="matomo-analytics" strategy="afterInteractive">
+          {`
+            var _paq = window._paq = window._paq || [];
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(['trackPageView']);
+            _paq.push(['enableLinkTracking']);
+            (function() {
+              var u="//analytics.kokomo.house/matomo/";
+              _paq.push(['setTrackerUrl', u+'matomo.php']);
+              _paq.push(['setSiteId', '2']);
+              var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+              g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+            })();
+          `}
+        </Script>
+      </head>
       <body className="relative bg-white pl-[calc(100vw-100%)] text-black antialiased dark:bg-gray-950 dark:text-white">
         <svg
           className="absolute inset-0 -z-10 h-full w-full"

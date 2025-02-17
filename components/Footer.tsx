@@ -9,7 +9,7 @@ export default function Footer() {
       {/* Newsletter Section */}
       <div className="mx-auto max-w-7xl px-6 pt-16">
         <div className="mb-12">
-          <NewsletterForm />
+          <NewsletterForm align="center" />
         </div>
 
         {/* Divider */}

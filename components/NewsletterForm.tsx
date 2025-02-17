@@ -1,14 +1,12 @@
 'use client'
 
 import type React from 'react'
-
 import { useState } from 'react'
 import {
   Button,
   TextField,
   Box,
   Typography,
-  Container,
   Snackbar,
   Alert,
   Paper,
@@ -16,7 +14,11 @@ import {
 } from '@mui/material'
 import MailOutlineIcon from '@mui/icons-material/MailOutline'
 
-export function NewsletterForm() {
+interface NewsletterFormProps {
+  align?: 'left' | 'center'
+}
+
+export function NewsletterForm({ align = 'center' }: NewsletterFormProps) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [snackbar, setSnackbar] = useState({
@@ -63,17 +65,31 @@ export function NewsletterForm() {
     }
   }
 
+  // Wrapper styles based on alignment
+  const wrapperStyles = {
+    width: '100%',
+    ...(align === 'center'
+      ? {
+          display: 'flex',
+          justifyContent: 'center',
+        }
+      : {}),
+  }
+
   return (
-    <Container maxWidth="sm">
+    <div style={wrapperStyles}>
       <Paper
         elevation={0}
         sx={{
-          p: 4,
+          py: 4,
+          px: align === 'center' ? 4 : 0,
           backgroundColor: 'transparent',
+          width: align === 'center' ? 'auto' : '100%',
+          maxWidth: align === 'center' ? 'sm' : 'none',
         }}
       >
-        <Box textAlign="center" mb={3}>
-          <Typography variant="h5" component="h3" gutterBottom>
+        <Box textAlign={align} mb={3}>
+          <Typography variant="h4" component="h3" gutterBottom>
             Newsletter abonnieren
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -83,7 +99,13 @@ export function NewsletterForm() {
         </Box>
 
         <form onSubmit={subscribe}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              width: '100%',
+            }}
+          >
             <TextField
               fullWidth
               type="email"
@@ -107,9 +129,9 @@ export function NewsletterForm() {
                 minWidth: 'auto',
                 px: 3,
                 whiteSpace: 'nowrap',
-                backgroundColor: '#05DE66', // Hintergrundfarbe geändert
+                backgroundColor: '#05DE66',
                 '&:hover': {
-                  backgroundColor: '#04C65C', // Hover-Farbe
+                  backgroundColor: '#04C65C',
                 },
               }}
             >
@@ -141,6 +163,6 @@ export function NewsletterForm() {
           </Alert>
         </Snackbar>
       </Paper>
-    </Container>
+    </div>
   )
 }
