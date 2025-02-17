@@ -154,7 +154,7 @@ export default function Home({ posts }: { posts: Post[] }) {
       </div>
 
       {/* Tag Filter */}
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
@@ -163,27 +163,27 @@ export default function Home({ posts }: { posts: Post[] }) {
         <div className="scrollbar scrollbar-w-2 scrollbar-thumb-primary-500 mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-6 pb-2">
           <Tags className="h-5 w-5" />
           {allTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() =>
-                setSelectedTags((prev) =>
-                  prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-                )
-              }
-              className={cn(
-                'flex cursor-pointer items-center rounded-full px-4 py-1 text-sm whitespace-nowrap transition-all',
-                selectedTags.includes(tag)
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-              )}
-            >
-              {/* Ersetze Bindestriche durch Leerzeichen in der Anzeige */}
-              {`${tag.replace(/-/g, ' ')} (${tagCounts[tag]})`}
-              {selectedTags.includes(tag) && <X className="ml-2 h-4 w-4" />}
-            </button>
+        <button
+          key={tag}
+          onClick={() =>
+            setSelectedTags((prev) =>
+          prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+            )
+          }
+          className={cn(
+            'flex cursor-pointer items-center rounded-full px-4 py-1 text-sm whitespace-nowrap transition-all',
+            selectedTags.includes(tag)
+          ? 'bg-primary-500 text-white'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          )}
+        >
+          {/* Ersetze Bindestriche durch Leerzeichen in der Anzeige *
+          </div>{`${tag.replace(/-/g, ' ')} (${tagCounts[tag]})`}
+          {selectedTags.includes(tag) && <X className="ml-2 h-4 w-4" />}
+        </button>
           ))}
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Posts Grid */}
       <div className="mx-auto max-w-7xl px-6 py-12">
