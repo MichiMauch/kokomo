@@ -3,9 +3,9 @@ import Script from 'next/script'
 import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
+import { Analytics } from '@vercel/analytics/react'
 
 import { Poppins as PoppinsFont } from 'next/font/google'
-import { Analytics, type AnalyticsConfig } from 'pliny/analytics'
 import { SearchProvider, type SearchConfig } from 'pliny/search'
 import Header from '@/components/Header'
 import SectionContainer from '@/components/SectionContainer'
@@ -67,7 +67,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
         <ThemeProviders>
-          <Analytics analyticsConfig={siteMetadata.analytics as AnalyticsConfig} />
           <div className="flex min-h-screen flex-col">
             <SectionContainer>
               <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
