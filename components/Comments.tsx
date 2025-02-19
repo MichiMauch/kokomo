@@ -15,7 +15,7 @@ import {
   Alert,
 } from '@mui/material'
 import { Reply as ReplyIcon } from '@mui/icons-material'
-import { getOrCreateIssue, createIssueComment, getIssueComments } from '../lib/github'
+import { searchIssue, createIssue, createIssueComment, getIssueComments } from '../lib/github'
 import { formatDateTime } from '../utils/date-formatter'
 import siteMetadata from '@/data/siteMetadata'
 import CommentForm from './CommentForm'
@@ -53,20 +53,22 @@ export default function Comments({ slug }: CommentsProps) {
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
   const [showSnackbar, setShowSnackbar] = useState(false)
   const [submitterName, setSubmitterName] = useState('')
+  const [issueNumber, setIssueNumber] = useState<number | null>(null)
 
   const loadComments = useCallback(async () => {
     try {
-      const issue = await getOrCreateIssue(slug)
-      const fetchedComments = await getIssueComments(issue.number)
-
-      const parsedComments = await Promise.all(
-        fetchedComments.map((comment) => parseComment(comment))
-      )
-
-      const validComments = parsedComments.filter(
-        (comment): comment is NonNullable<ParsedComment> => comment !== null
-      )
-      setComments(buildCommentHierarchy(validComments))
+      const existingIssue = await searchIssue(slug)
+      if (existingIssue) {
+        setIssueNumber(existingIssue.number)
+        const fetchedComments = await getIssueComments(existingIssue.number)
+        const parsedComments = await Promise.all(
+          fetchedComments.map((comment) => parseComment(comment))
+        )
+        const validComments = parsedComments.filter(
+          (comment): comment is NonNullable<ParsedComment> => comment !== null
+        )
+        setComments(buildCommentHierarchy(validComments))
+      }
     } catch (error) {
       console.error('Failed to load comments:', error)
     } finally {
@@ -82,8 +84,14 @@ export default function Comments({ slug }: CommentsProps) {
     async (formData: { name: string; email: string; comment: string }) => {
       setIsSubmitting(true)
       try {
-        const issue = await getOrCreateIssue(slug)
-        await createIssueComment(issue.number, {
+        let currentIssueNumber = issueNumber
+        if (!currentIssueNumber) {
+          const issue = await createIssue(slug)
+          currentIssueNumber = issue.number
+          setIssueNumber(currentIssueNumber)
+        }
+
+        await createIssueComment(currentIssueNumber!, {
           ...formData,
           parentId: replyingTo || undefined,
         })
@@ -92,12 +100,13 @@ export default function Comments({ slug }: CommentsProps) {
         setSubmitterName(formData.name)
         setShowSnackbar(true)
       } catch (error) {
+        console.error('Failed to post comment:', error)
         alert('Failed to post comment')
       } finally {
         setIsSubmitting(false)
       }
     },
-    [slug, replyingTo, loadComments]
+    [slug, replyingTo, loadComments, issueNumber]
   )
 
   const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
@@ -151,14 +160,13 @@ export default function Comments({ slug }: CommentsProps) {
         <CardContent>
           {isLoading ? (
             <Box textAlign="center" py={3}>
-              <Typography>Kommentare laden...</Typography>
+              <Typography>Loading comments...</Typography>
             </Box>
           ) : (
             <Box mb={4}>
               {comments.length === 0 ? (
                 <Typography color="textSecondary" textAlign="center">
-                  Es gibt hier noch keine Kommentare. Sei die erste Person die Kommentiert! <br />
-                  Die E-Mail Adresse wird nicht veröffentlicht.
+                  No comments yet. Be the first to comment!
                 </Typography>
               ) : (
                 comments.map((comment) => <CommentComponent key={comment.id} comment={comment} />)
@@ -171,6 +179,11 @@ export default function Comments({ slug }: CommentsProps) {
           {!replyingTo && (
             <>
               <CommentForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+              <Box mt={2}>
+                <Typography variant="caption" color="textSecondary">
+                  Your comment will be visible after moderation.
+                </Typography>
+              </Box>
             </>
           )}
         </CardContent>
