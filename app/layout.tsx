@@ -130,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
         <ThemeProviders>
+          <Analytics />
           <div className="flex min-h-screen flex-col">
             <SectionContainer>
               <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
