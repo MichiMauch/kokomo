@@ -1,4 +1,4 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 
 interface PageSEOProps {
@@ -13,6 +13,23 @@ export function genPageMetadata({ title, description, image, ...rest }: PageSEOP
   return {
     title,
     description: description || siteMetadata.description,
+    metadataBase: new URL(siteMetadata.siteUrl),
+    // Canonical URL hinzugefügt
+    alternates: {
+      canonical: '/',
+    },
+    // Robots Meta Tag hinzugefügt
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     openGraph: {
       title: `${title} | ${siteMetadata.title}`,
       description: description || siteMetadata.description,

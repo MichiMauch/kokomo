@@ -26,6 +26,21 @@ export const metadata = genPageMetadata({
   title: 'KOKOMO House',
   description:
     'Seit September 2022 wohnen wir in unserem Tiny House KOKOMO und berichten hier über unsere Erfahrungen.',
+  metadataBase: new URL(siteMetadata.siteUrl),
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     // Standard Favicons
     icon: [
