@@ -25,7 +25,7 @@ const Poppins = PoppinsFont({
 export const metadata = genPageMetadata({
   title: 'KOKOMO House',
   description:
-    'Seit September 2022 wohnen wir in unserem Tiny House KOKOMO und berichten hier über unsere Erfahrungen.',
+    'Seit September 2022 wohnen wir in unserem Tiny House KOKOMO und berichten über unsere Erfahrungen.',
   metadataBase: new URL(siteMetadata.siteUrl),
   alternates: {
     canonical: '/',

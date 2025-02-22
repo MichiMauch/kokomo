@@ -9,7 +9,7 @@ const siteMetadata = {
   siteUrl: 'https://www.kokomo.house',
   siteRepo: 'https://github.com/timlrx/tailwind-nextjs-starter-blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/kokomo-bildmarke.svg`,
-  socialBanner: `${process.env.BASE_PATH || ''}/static/images/kokomo-bildmarke.svg`,
+  socialBanner: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
   // mastodon: 'https://mastodon.social/@mastodonuser',
   email: 'michi.mauch@gmail.com',
   // github: 'https://github.com',
