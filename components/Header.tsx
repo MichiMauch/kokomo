@@ -1,17 +1,37 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
 import Image from 'next/image'
 import Link from './Link'
 import MobileNav from './MobileNav'
-import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
 
 const Header = () => {
-  let headerClass =
-    'font-thin flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
-  if (siteMetadata.stickyNav) {
-    headerClass += ' sticky top-0 z-50'
-  }
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY) {
+        setIsVisible(false) // Beim Scrollen nach unten ausblenden
+      } else {
+        setIsVisible(true) // Beim Scrollen nach oben einblenden
+      }
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [lastScrollY])
+
+  const headerClass = `
+    px-6 font-thin flex items-center w-full max-w-screen-xl mx-auto 
+    dark:bg-gray-950 justify-between py-10 z-50 transition-transform duration-300 
+    ${isVisible ? 'translate-y-0' : '-translate-y-full'}
+  `
 
   return (
     <header className={headerClass}>
@@ -50,7 +70,6 @@ const Header = () => {
             ))}
         </div>
         <SearchButton />
-        <ThemeSwitch />
         <MobileNav />
       </div>
     </header>

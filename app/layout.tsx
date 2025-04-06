@@ -132,7 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProviders>
           <Analytics />
           <div className="flex min-h-screen flex-col">
-            <SectionContainer>
+            <SectionContainer className="w-full">
               <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
                 <Header />
                 <main className="mb-auto">{children}</main>
