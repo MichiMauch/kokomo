@@ -33,7 +33,7 @@ export default function AdminPostList() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('/admin/api/list-posts')
+        const res = await fetch('../../api/list-posts')
         const data = await res.json()
         setPosts(data.files || [])
       } catch (err) {
@@ -48,7 +48,7 @@ export default function AdminPostList() {
   const deletePostNow = async (post: Post) => {
     try {
       setDeletingPath(post.path)
-      const res = await fetch('/admin/api/delete-post', {
+      const res = await fetch('../../api/delete-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

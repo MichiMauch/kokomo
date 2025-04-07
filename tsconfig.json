@@ -46,7 +46,8 @@
     "next.config.cjs",
     "eslint.config.cjs",
     "prettier.config.cjs",
-    "app/test/page.tsx.ori"
+    "app/test/page.tsx.ori",
+    ".next/types/app/(admin)/admin/layout.tsx"
   ],
   "exclude": ["node_modules"]
 }
