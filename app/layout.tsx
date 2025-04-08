@@ -5,6 +5,7 @@ import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
 import { Analytics } from '@vercel/analytics/react'
 import { Toaster } from 'sonner'
+import MatomoScript from '@/components/MatomoScript'
 
 import { Poppins as PoppinsFont } from 'next/font/google'
 import { SearchProvider, type SearchConfig } from 'pliny/search'
@@ -100,21 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
-        <Script id="matomo-analytics" strategy="afterInteractive">
-          {`
-            var _paq = window._paq = window._paq || [];
-            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
-            _paq.push(['trackPageView']);
-            _paq.push(['enableLinkTracking']);
-            (function() {
-              var u="//analytics.kokomo.house/matomo/";
-              _paq.push(['setTrackerUrl', u+'matomo.php']);
-              _paq.push(['setSiteId', '2']);
-              var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-              g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-            })();
-          `}
-        </Script>
+        <MatomoScript />
       </head>
       <body className="relative bg-white pl-[calc(100vw-100%)] text-black antialiased dark:bg-gray-950 dark:text-white">
         <svg
