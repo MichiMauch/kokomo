@@ -4,7 +4,6 @@ import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
 import { Analytics } from '@vercel/analytics/react'
-import { Toaster } from 'sonner'
 import MatomoScript from '@/components/MatomoScript'
 
 import { Poppins as PoppinsFont } from 'next/font/google'
@@ -123,7 +122,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SectionContainer className="w-full">
               <SearchProvider searchConfig={siteMetadata.search as SearchConfig}>
                 <Header />
-                <Toaster />
 
                 <main className="mb-auto">{children}</main>
               </SearchProvider>

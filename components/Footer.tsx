@@ -1,9 +1,19 @@
+'use client'
+
+import { usePathname } from 'next/navigation'
 import Link from './Link'
 import siteMetadata from '@/data/siteMetadata'
 import SocialIcon from '@/components/social-icons'
 import { NewsletterForm } from './NewsletterForm'
 
 export default function Footer() {
+  const pathname = usePathname()
+
+  // Wenn wir im Admin-Bereich sind, zeige den Footer nicht an
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
+
   return (
     <footer className="w-full bg-gray-100 dark:bg-gray-800">
       {/* Newsletter Section */}

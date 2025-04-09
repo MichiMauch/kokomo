@@ -19,7 +19,7 @@ export default function MatomoMonthlyChart() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch(`../api/monthly?mode=${mode}`)
+      const res = await fetch(`/admin/api/monthly?mode=${mode}`)
       const json: MonthlyData[] = await res.json()
       setData(json)
     }
@@ -39,7 +39,7 @@ export default function MatomoMonthlyChart() {
     },
     title: { text: '' },
     dataLabels: { enabled: false },
-    colors: ['#020617'],
+    colors: ['#E9BA6B'],
     plotOptions: {
       bar: {
         columnWidth: '40%',
@@ -84,7 +84,7 @@ export default function MatomoMonthlyChart() {
     <Card className="bg-white text-gray-700 shadow-md">
       <CardBody>
         <div className="mb-6 flex items-center gap-4">
-          <div className="rounded-lg bg-gray-900 p-3 text-white">
+          <div className="bg-primary-500 rounded-lg p-3 text-white">
             <ChartBarIcon className="h-6 w-6" />
           </div>
           <div className="flex-1">
@@ -100,13 +100,13 @@ export default function MatomoMonthlyChart() {
           <div className="flex gap-2">
             <button
               onClick={() => setMode('monthly')}
-              className={`rounded px-3 py-1 text-sm font-medium ${mode === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`rounded px-3 py-1 text-sm font-medium ${mode === 'monthly' ? 'bg-secondary-500 text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               Monat
             </button>
             <button
               onClick={() => setMode('daily')}
-              className={`rounded px-3 py-1 text-sm font-medium ${mode === 'daily' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`rounded px-3 py-1 text-sm font-medium ${mode === 'daily' ? 'bg-secondary-500 text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               Tag
             </button>

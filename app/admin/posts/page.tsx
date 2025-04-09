@@ -33,7 +33,7 @@ export default function AdminPostList() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('../../api/list-posts')
+        const res = await fetch('/admin/api/list-posts')
         const data = await res.json()
         setPosts(data.files || [])
       } catch (err) {
@@ -48,7 +48,7 @@ export default function AdminPostList() {
   const deletePostNow = async (post: Post) => {
     try {
       setDeletingPath(post.path)
-      const res = await fetch('../../api/delete-post', {
+      const res = await fetch('/admin/api/delete-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +98,7 @@ export default function AdminPostList() {
             <div className="flex gap-2">
               <Button
                 onClick={() => router.push(`/admin/posts/${post.name.replace(/\.mdx$/, '')}`)}
-                className="cursor-pointer transition hover:bg-gray-100 hover:text-blue-600"
+                className="bg-primary-500 hover:bg-primary-300 cursor-pointer text-black transition hover:text-white"
               >
                 ✏️ Bearbeiten
               </Button>

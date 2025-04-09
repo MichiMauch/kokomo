@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 export function SidebarLinks() {
   const pathname = usePathname()
   const links = [
+    { href: '/admin/', label: '🔢 Dashboard' },
     { href: '/admin/create', label: '🆕 Neuer Post' },
     { href: '/admin/posts', label: '📂 Alle Beiträge' },
     { href: '/admin/deploy', label: '🔁 Deploy-Status' }, // 👈 NEU

@@ -43,7 +43,7 @@ export default function MatomoStats() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      const res = await fetch(`../api/matomo?range=${period}`, { method: 'POST' })
+      const res = await fetch(`/admin/api/matomo?range=${period}`, { method: 'POST' })
       const contentType = res.headers.get('content-type')
       if (!res.ok || !contentType?.includes('application/json')) {
         console.error('Fehler beim Laden der Matomo-Daten')
@@ -103,7 +103,7 @@ export default function MatomoStats() {
             onClick={() => setPeriod(p.value)}
             className={classNames(
               period === p.value
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-secondary-500 text-white'
                 : 'bg-white text-gray-700 ring-1 ring-gray-300 ring-inset hover:bg-gray-50',
               'rounded-md px-4 py-2 text-sm font-medium shadow-sm transition'
             )}
@@ -116,19 +116,19 @@ export default function MatomoStats() {
       {loading && <p className="text-gray-500">Lade Daten…</p>}
 
       {!loading && stats && (
-        <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2">
           {stats.map((item) => (
             <div
               key={item.id}
               className="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6"
             >
               <dt>
-                <div className="absolute rounded-md bg-indigo-500 p-3">
+                <div className="bg-primary-500 absolute rounded-md p-3">
                   <item.icon className="size-6 text-white" aria-hidden="true" />
                 </div>
                 <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>
               </dt>
-              <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+              <dd className="ml-16 flex items-baseline">
                 <p className="text-2xl font-semibold text-gray-900">{item.stat}</p>
                 {item.change && (
                   <p
@@ -151,17 +151,6 @@ export default function MatomoStats() {
                     {item.change}
                   </p>
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
-                  <div className="text-sm">
-                    <button
-                      type="button"
-                      className="font-medium text-indigo-600 hover:text-indigo-500"
-                      onClick={() => console.log('Details clicked for', item.name)}
-                    >
-                      Details<span className="sr-only"> {item.name}</span>
-                    </button>
-                  </div>
-                </div>
               </dd>
             </div>
           ))}
