@@ -11,6 +11,7 @@ export default function PageSpeedDashboardCard() {
     performance: number
     accessibility: number
     seo: number
+    bestPractices: number
     url: string
   }>(null)
   const [error, setError] = useState('')
@@ -62,6 +63,11 @@ export default function PageSpeedDashboardCard() {
       value: result?.seo,
       icon: StarIcon,
     },
+    {
+      title: 'Best Practices',
+      value: result?.bestPractices,
+      icon: StarIcon,
+    },
   ]
 
   return (
@@ -101,7 +107,7 @@ export default function PageSpeedDashboardCard() {
       {result && !loading && (
         <div className="mt-4 space-y-2">
           <p className="text-sm text-gray-500">URL: {result.url}</p>
-          <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {statCards.map((item, idx) => (
               <div
                 key={idx}
