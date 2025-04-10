@@ -4,6 +4,9 @@
       "NPM_CONFIG_PRODUCTION": "false"
     }
   },
+  "functions": {
+    "maxDuration": 60
+  },
   "redirects": [
     {
       "source": "/ueber-uns-kokomo",
