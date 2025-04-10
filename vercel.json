@@ -4,11 +4,6 @@
       "NPM_CONFIG_PRODUCTION": "false"
     }
   },
-  "functions": {
-    "api/**.ts": {
-      "maxDuration": 60
-    }
-  },
   "redirects": [
     {
       "source": "/ueber-uns-kokomo",

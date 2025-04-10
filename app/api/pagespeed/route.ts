@@ -1,6 +1,11 @@
 // app/api/pagespeed/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
+// ⏱️ Konfiguration für maximale Ausführungszeit
+export const config = {
+  maxDuration: 60, // bis zu 60 Sekunden erlaubt
+}
+
 const PAGESPEED_API_KEY = process.env.PAGESPEED_API_KEY
 const TARGET_URL = 'https://kokomo.house/'
 
