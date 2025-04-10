@@ -1,6 +1,9 @@
 // app/api/analyze-matomo/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
+// ⏱️ Konfiguration für maximale Ausführungszeit
+export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
+
 const MATOMO_API_URL = 'https://analytics.kokomo.house/matomo/index.php'
 const SITE_ID = '2'
 const TOKEN_AUTH = process.env.MATOMO_TOKEN || ''

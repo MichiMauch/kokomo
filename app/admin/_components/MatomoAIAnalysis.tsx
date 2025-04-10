@@ -3,9 +3,6 @@
 import { useState } from 'react'
 import LoadingSpinner from './LoadingSpinner'
 
-// ⏱️ Konfiguration für maximale Ausführungszeit
-export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
-
 const PERIODS = [
   { label: '7 Tage', value: '7' },
   { label: '28 Tage', value: '28' },
