@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
 
-export default function AgentPage() {
-  const searchParams = useSearchParams()
-  const presetTitle = searchParams.get('title') || ''
+export const dynamic = 'force-dynamic'
 
-  const [title, setTitle] = useState(presetTitle)
+export default function AgentPage() {
+  const [title, setTitle] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -17,54 +16,89 @@ export default function AgentPage() {
   const router = useRouter()
   const { setDraftData } = useMdxDraft()
 
-  useEffect(() => {
-    if (presetTitle) {
-      setAutoStart(true)
+  const handleCreatePlan = useCallback(async () => {
+    if (!title) {
+      console.error('❌ Kein Titel angegeben!')
+      return
     }
-  }, [presetTitle])
 
-  useEffect(() => {
-    if (autoStart && title && !plan && !loading) {
-      handleCreatePlan()
-      setAutoStart(false)
-    }
-  }, [autoStart, title, plan, loading])
-
-  const handleCreatePlan = async () => {
+    console.log('🚀 handleCreatePlan gestartet mit Titel:', title)
     setLoading(true)
     setPlan(null)
 
-    const res = await fetch('/api/agent-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    })
+    try {
+      const res = await fetch('/api/agent-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
 
-    const json = await res.json()
-    setPlan(json)
-    setLoading(false)
-  }
+      const json = await res.json()
+      console.log('📦 Antwort von /api/agent-plan:', json)
+      setPlan(json)
+    } catch (err) {
+      console.error('❌ Fehler bei /api/agent-plan:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [title])
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const presetTitle = urlParams.get('title') || ''
+    console.log('🔍 titleFromQuery (window.location.search):', presetTitle)
+    if (presetTitle) {
+      console.log('✅ presetTitle erkannt:', presetTitle)
+      setTitle(presetTitle)
+      setAutoStart(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log(
+      '🔄 Zustand: autoStart:',
+      autoStart,
+      'title:',
+      title,
+      'plan:',
+      plan,
+      'loading:',
+      loading
+    )
+    if (autoStart && title && !plan && !loading) {
+      console.log('🧠 Starte handleCreatePlan() automatisch')
+      handleCreatePlan()
+      setAutoStart(false)
+    }
+  }, [autoStart, title, plan, loading, handleCreatePlan])
 
   const handleGenerateText = async () => {
     if (!plan) return
     setGenerating(true)
 
-    const res = await fetch('/api/agent-generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, plan }),
-    })
+    try {
+      const res = await fetch('/api/agent-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, plan }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
+      console.log('📝 Text generiert:', data)
 
-    setDraftData({
-      title,
-      date: new Date().toISOString().split('T')[0],
-      draft: true,
-      body: data.body,
-    })
+      setDraftData({
+        title,
+        date: new Date().toISOString().split('T')[0],
+        draft: true,
+        body: data.body,
+      })
 
-    router.push(`/admin/create?title=${encodeURIComponent(title)}`)
+      router.push(`/admin/create?title=${encodeURIComponent(title)}`)
+    } catch (err) {
+      console.error('❌ Fehler beim Text generieren:', err)
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
