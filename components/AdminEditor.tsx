@@ -36,15 +36,22 @@ const AdminEditor = () => {
 
   const params = useSearchParams()
   const { draftData } = useMdxDraft()
+  console.log('🎯 draftData (direkt in Komponente):', draftData)
 
   useEffect(() => {
     const titleFromQuery = params?.get('title')
 
     if ((draftData && draftData.title) || titleFromQuery) {
       if (draftData?.title) {
+        console.log('🎯 draftData (useEffect):', draftData)
+        console.log('🧪 draftData.body im useEffect:', draftData.body)
         setTitle(draftData.title)
         setDate(draftData.date || new Date().toISOString().split('T')[0])
         setDraft(draftData.draft ?? true)
+        // 🧪 Hier das Log einbauen:
+        console.log('🧪 draftData.body:', draftData.body)
+
+        setBody(draftData.body || '') // 🆕 hier
       } else if (titleFromQuery) {
         setTitle(titleFromQuery)
         setDate(new Date().toISOString().split('T')[0])

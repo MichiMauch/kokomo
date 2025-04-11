@@ -2,8 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import LoadingSpinner from './LoadingSpinner'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
+import SpinnerModal from './SpinnerModal'
+import LoadingSpinner from './LoadingSpinner'
 
 type Props = {
   keywords: string[]
@@ -12,6 +13,7 @@ type Props = {
 export default function ContentIdeaGenerator({ keywords }: Props) {
   const [ideas, setIdeas] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [generatingIndex, setGeneratingIndex] = useState<number | null>(null)
 
   const { setDraftData } = useMdxDraft()
   const router = useRouter()
@@ -31,24 +33,38 @@ export default function ContentIdeaGenerator({ keywords }: Props) {
     setLoading(false)
   }
 
-  const handleUseIdea = (idea: string) => {
-    const today = new Date().toISOString().split('T')[0]
-    const cleanTitle = idea
-      .replace(/^[-*\d.]+\s*/, '') // entfernt "1. ", "* ", "- ", etc.
-      .replace(/^["“]|["”]$/g, '') // entfernt Anführungszeichen
-      .trim()
-    const newDraft = {
-      title: cleanTitle,
-      date: today,
-      draft: true,
-    }
+  const handleUseIdea = async (idea: string, index: number) => {
+    setGeneratingIndex(index)
 
-    console.log('✅ setDraftData wird gesetzt:', newDraft)
-    setDraftData(newDraft)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const cleanTitle = idea
+        .replace(/^[-*\d.]+\s*/, '')
+        .replace(/^["“]|["”]$/g, '')
+        .trim()
 
-    setTimeout(() => {
+      const contentRes = await fetch('/api/generate-post-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: cleanTitle }),
+      })
+
+      const contentJson = await contentRes.json()
+      const body = contentJson.body || ''
+
+      setDraftData({
+        title: cleanTitle,
+        date: today,
+        draft: true,
+        body,
+      })
+
       router.push(`/admin/create?title=${encodeURIComponent(cleanTitle)}`)
-    }, 100)
+    } catch (err) {
+      console.error('Fehler beim Generieren des Inhalts:', err)
+    } finally {
+      setGeneratingIndex(null)
+    }
   }
 
   return (
@@ -73,15 +89,18 @@ export default function ContentIdeaGenerator({ keywords }: Props) {
             <div key={i} className="flex items-start justify-between gap-4 border-b pb-2">
               <p className="text-gray-800">{idea}</p>
               <button
-                onClick={() => handleUseIdea(idea)}
-                className="text-sm text-blue-600 hover:underline"
+                onClick={() => handleUseIdea(idea, i)}
+                className="bg-primary-500 hover:bg-primary-300 flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-white"
               >
-                📄 im Editor öffnen
+                <span>📄</span>
+                <span>Inhalt erstellen</span>
               </button>
             </div>
           ))}
         </div>
       )}
+
+      {generatingIndex !== null && <SpinnerModal text="🛠️ Entwurf wird erstellt…" />}
     </div>
   )
 }
