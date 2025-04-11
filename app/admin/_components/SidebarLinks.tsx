@@ -12,6 +12,8 @@ export function SidebarLinks() {
     { href: '/admin/speed', label: '⚡ PageSpeed Test' }, // 👈 NEU
     { href: '/admin/seo', label: '🔍 Suchbegriffe' }, // 👈 NEU
     { href: '/admin/strategie', label: '🧠 Content Ideen' }, // 👈 NEU
+    { href: '/admin/comments', label: '🧠 Kommentare' }, // 👈 NEU
+
     { href: '/admin/deploy', label: '🔁 Deploy-Status' }, // 👈 NEU
   ]
 

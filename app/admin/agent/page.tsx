@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
 
 export const dynamic = 'force-dynamic'
 
 export default function AgentPage() {
-  const [title, setTitle] = useState('')
+  const searchParams = useSearchParams()
+  const presetTitle = searchParams.get('title') || ''
+
+  const [title, setTitle] = useState(presetTitle)
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -17,56 +20,28 @@ export default function AgentPage() {
   const { setDraftData } = useMdxDraft()
 
   const handleCreatePlan = useCallback(async () => {
-    if (!title) {
-      console.error('❌ Kein Titel angegeben!')
-      return
-    }
-
-    console.log('🚀 handleCreatePlan gestartet mit Titel:', title)
     setLoading(true)
     setPlan(null)
 
-    try {
-      const res = await fetch('/api/agent-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      })
+    const res = await fetch('/api/agent-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
 
-      const json = await res.json()
-      console.log('📦 Antwort von /api/agent-plan:', json)
-      setPlan(json)
-    } catch (err) {
-      console.error('❌ Fehler bei /api/agent-plan:', err)
-    } finally {
-      setLoading(false)
-    }
+    const json = await res.json()
+    setPlan(json)
+    setLoading(false)
   }, [title])
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const presetTitle = urlParams.get('title') || ''
-    console.log('🔍 titleFromQuery (window.location.search):', presetTitle)
     if (presetTitle) {
-      console.log('✅ presetTitle erkannt:', presetTitle)
-      setTitle(presetTitle)
       setAutoStart(true)
     }
-  }, [])
+  }, [presetTitle])
 
   useEffect(() => {
-    console.log(
-      '🔄 Zustand: autoStart:',
-      autoStart,
-      'title:',
-      title,
-      'plan:',
-      plan,
-      'loading:',
-      loading
-    )
     if (autoStart && title && !plan && !loading) {
-      console.log('🧠 Starte handleCreatePlan() automatisch')
       handleCreatePlan()
       setAutoStart(false)
     }
@@ -77,25 +52,36 @@ export default function AgentPage() {
     setGenerating(true)
 
     try {
-      const res = await fetch('/api/agent-generate', {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, plan }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'user',
+              content: `Erstelle einen ersten Blogpost für den Titel "${title}" mit folgender Struktur: Ziel: ${plan.ziel}, Zielgruppe: ${plan.zielgruppe}, Gliederung: ${plan.gliederung.join(', ')}. Verwende Markdown mit Zwischenüberschriften.`,
+            },
+          ],
+        }),
       })
 
       const data = await res.json()
-      console.log('📝 Text generiert:', data)
+      const body = data.choices?.[0]?.message?.content?.trim() || ''
 
       setDraftData({
         title,
         date: new Date().toISOString().split('T')[0],
         draft: true,
-        body: data.body,
+        body,
       })
 
       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
     } catch (err) {
-      console.error('❌ Fehler beim Text generieren:', err)
+      console.error('Fehler beim direkten GPT-Aufruf:', err)
     } finally {
       setGenerating(false)
     }
