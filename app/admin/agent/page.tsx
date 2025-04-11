@@ -1,17 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
 
 export const dynamic = 'force-dynamic'
 
 export default function AgentPage() {
-  const searchParams = useSearchParams()
-  const presetTitle = searchParams.get('title') || ''
-
-  const [title, setTitle] = useState(presetTitle)
+  const [title, setTitle] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -20,28 +17,60 @@ export default function AgentPage() {
   const { setDraftData } = useMdxDraft()
 
   const handleCreatePlan = useCallback(async () => {
+    if (!title) {
+      console.error('❌ Kein Titel angegeben!')
+      return
+    }
+
+    console.log('🚀 handleCreatePlan gestartet mit Titel:', title)
     setLoading(true)
     setPlan(null)
 
-    const res = await fetch('/api/agent-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    })
+    try {
+      const res = await fetch('/api/agent-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
 
-    const json = await res.json()
-    setPlan(json)
-    setLoading(false)
+      if (!res.ok) {
+        throw new Error(`Fehler beim Abrufen der Strategie: ${res.statusText}`)
+      }
+
+      const json = await res.json()
+      console.log('📦 Antwort von /api/agent-plan:', json)
+      setPlan(json)
+    } catch (err) {
+      console.error('❌ Fehler bei /api/agent-plan:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [title])
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const presetTitle = urlParams.get('title') || ''
+    console.log('🔍 titleFromQuery (window.location.search):', presetTitle)
     if (presetTitle) {
+      console.log('✅ presetTitle erkannt:', presetTitle)
+      setTitle(presetTitle)
       setAutoStart(true)
     }
-  }, [presetTitle])
+  }, [])
 
   useEffect(() => {
+    console.log(
+      '🔄 Zustand: autoStart:',
+      autoStart,
+      'title:',
+      title,
+      'plan:',
+      plan,
+      'loading:',
+      loading
+    )
     if (autoStart && title && !plan && !loading) {
+      console.log('🧠 Starte handleCreatePlan() automatisch')
       handleCreatePlan()
       setAutoStart(false)
     }
@@ -50,6 +79,12 @@ export default function AgentPage() {
   const handleGenerateText = async () => {
     if (!plan) return
     setGenerating(true)
+
+    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+      console.error('❌ Fehlende Umgebungsvariable: NEXT_PUBLIC_OPENAI_API_KEY')
+      setGenerating(false)
+      return
+    }
 
     try {
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -69,19 +104,23 @@ export default function AgentPage() {
         }),
       })
 
+      if (!res.ok) {
+        throw new Error(`Fehler beim Abrufen der Daten: ${res.statusText}`)
+      }
+
       const data = await res.json()
-      const body = data.choices?.[0]?.message?.content?.trim() || ''
+      console.log('📝 Text generiert:', data)
 
       setDraftData({
         title,
         date: new Date().toISOString().split('T')[0],
         draft: true,
-        body,
+        body: data.choices?.[0]?.message?.content?.trim() || '',
       })
 
       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
     } catch (err) {
-      console.error('Fehler beim direkten GPT-Aufruf:', err)
+      console.error('❌ Fehler beim Text generieren:', err)
     } finally {
       setGenerating(false)
     }
