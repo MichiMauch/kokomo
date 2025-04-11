@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { OpenAI } from 'openai'
 
+// ⏱️ Konfiguration für maximale Ausführungszeit
+export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 function cleanMarkdown(content: string): string {
