@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,8 @@ import { Loader2, ClipboardCopy } from 'lucide-react'
 import MarkdownPreview from '@/components/MarkdownPreview'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
+import { useSearchParams } from 'next/navigation'
+import { useMdxDraft } from '@/components/context/mdx-draft-context'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
 
@@ -30,6 +32,25 @@ const AdminEditor = () => {
   const [uploadingMarkdownImage, setUploadingMarkdownImage] = useState(false)
   const [markdownPathSnippet, setMarkdownPathSnippet] = useState('')
   const [publishing, setPublishing] = useState(false)
+
+  const params = useSearchParams()
+  const { draftData } = useMdxDraft()
+
+  useEffect(() => {
+    const titleFromQuery = params?.get('title')
+
+    if ((draftData && draftData.title) || titleFromQuery) {
+      if (draftData?.title) {
+        setTitle(draftData.title)
+        setDate(draftData.date || new Date().toISOString().split('T')[0])
+        setDraft(draftData.draft ?? true)
+      } else if (titleFromQuery) {
+        setTitle(titleFromQuery)
+        setDate(new Date().toISOString().split('T')[0])
+        setDraft(true)
+      }
+    }
+  }, [draftData, params])
 
   const generateMDX = () => {
     const frontmatter = `---\ntitle: '${title}'\ndate: '${date}'\ntags: [${tags
@@ -151,6 +172,19 @@ const AdminEditor = () => {
         onChange={(e) => setTags(e.target.value)}
       />
       <Input placeholder="Summary" value={summary} onChange={(e) => setSummary(e.target.value)} />
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="draft"
+          checked={draft}
+          onChange={(e) => setDraft(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <label htmlFor="draft" className="text-sm text-gray-700">
+          Beitrag als <strong>Entwurf</strong> speichern
+        </label>
+      </div>
 
       <div className="space-y-2">
         <label htmlFor="title-image-upload" className="block font-medium">

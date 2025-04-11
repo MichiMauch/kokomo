@@ -71,10 +71,10 @@ export default function PageSpeedDashboardCard() {
   ]
 
   return (
-    <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow">
+    <div className="w-full p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">🔍 PageSpeed Test</h3>
+          <h3 className="text-lg font-semibold text-gray-900">⚡ PageSpeed Test</h3>
           <p className="text-sm text-gray-600">Starte einen aktuellen Google PageSpeed Test.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

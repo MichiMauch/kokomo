@@ -2,6 +2,7 @@
 import type React from 'react'
 import { Toaster } from 'sonner'
 import { SidebarLinks } from './_components/SidebarLinks'
+import { MdxDraftProvider } from '@/components/context/mdx-draft-context'
 
 export default function AdminTemplate({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,7 @@ export default function AdminTemplate({ children }: { children: React.ReactNode 
         </aside>
         <main className="flex-1 overflow-auto p-8">
           <Toaster />
-          {children}
+          <MdxDraftProvider>{children}</MdxDraftProvider>
         </main>
       </div>
     </div>

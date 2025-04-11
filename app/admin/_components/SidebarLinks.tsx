@@ -10,6 +10,8 @@ export function SidebarLinks() {
     { href: '/admin/create', label: '✍️ Neuer Post' },
     { href: '/admin/posts', label: '📄 Alle Beiträge' },
     { href: '/admin/speed', label: '⚡ PageSpeed Test' }, // 👈 NEU
+    { href: '/admin/seo', label: '🔍 Suchbegriffe' }, // 👈 NEU
+    { href: '/admin/strategie', label: '🧠 Content Ideen' }, // 👈 NEU
     { href: '/admin/deploy', label: '🔁 Deploy-Status' }, // 👈 NEU
   ]
 
