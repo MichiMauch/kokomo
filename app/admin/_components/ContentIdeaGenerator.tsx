@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from './SpinnerModal'
 import LoadingSpinner from './LoadingSpinner'
 
@@ -15,7 +14,6 @@ export default function ContentIdeaGenerator({ keywords }: Props) {
   const [loading, setLoading] = useState(false)
   const [generatingIndex, setGeneratingIndex] = useState<number | null>(null)
 
-  const { setDraftData } = useMdxDraft()
   const router = useRouter()
 
   const generateIdeas = async () => {
@@ -33,38 +31,15 @@ export default function ContentIdeaGenerator({ keywords }: Props) {
     setLoading(false)
   }
 
-  const handleUseIdea = async (idea: string, index: number) => {
+  const handleUseIdea = (idea: string, index: number) => {
     setGeneratingIndex(index)
 
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const cleanTitle = idea
-        .replace(/^[-*\d.]+\s*/, '')
-        .replace(/^["“]|["”]$/g, '')
-        .trim()
+    const cleanTitle = idea
+      .replace(/^[-*\d.]+\s*/, '')
+      .replace(/^["“]|["”]$/g, '')
+      .trim()
 
-      const contentRes = await fetch('/api/generate-post-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: cleanTitle }),
-      })
-
-      const contentJson = await contentRes.json()
-      const body = contentJson.body || ''
-
-      setDraftData({
-        title: cleanTitle,
-        date: today,
-        draft: true,
-        body,
-      })
-
-      router.push(`/admin/create?title=${encodeURIComponent(cleanTitle)}`)
-    } catch (err) {
-      console.error('Fehler beim Generieren des Inhalts:', err)
-    } finally {
-      setGeneratingIndex(null)
-    }
+    router.push(`/admin/agent?title=${encodeURIComponent(cleanTitle)}`)
   }
 
   return (
@@ -100,7 +75,7 @@ export default function ContentIdeaGenerator({ keywords }: Props) {
         </div>
       )}
 
-      {generatingIndex !== null && <SpinnerModal text="🛠️ Entwurf wird erstellt…" />}
+      {generatingIndex !== null && <SpinnerModal text="🔍 Strategie wird vorbereitet…" />}
     </div>
   )
 }
