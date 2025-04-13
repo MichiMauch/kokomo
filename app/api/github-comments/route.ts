@@ -21,7 +21,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { issue_number, message } = await req.json()
+  const { issue_number, message, parent_id } = await req.json()
+
+  const finalMessage = parent_id ? `${message}\n\nparent_id: ${parent_id}` : message
 
   const res = await fetch(
     `${GITHUB_API}/repos/${process.env.GITHUB_REPO_OWNER}/${process.env.GITHUB_REPO_NAME}/issues/${issue_number}/comments`,
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ body: message }),
+      body: JSON.stringify({ body: finalMessage }),
     }
   )
 
@@ -41,4 +43,45 @@ export async function POST(req: NextRequest) {
 
   const data = await res.json()
   return NextResponse.json(data)
+}
+
+export async function PATCH(req: NextRequest) {
+  const { comment_id, body } = await req.json()
+
+  const res = await fetch(
+    `${GITHUB_API}/repos/${process.env.GITHUB_REPO_OWNER}/${process.env.GITHUB_REPO_NAME}/issues/comments/${comment_id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ body }),
+    }
+  )
+
+  if (!res.ok) {
+    return NextResponse.json({ error: 'Kommentar konnte nicht bearbeitet werden' }, { status: 500 })
+  }
+
+  const data = await res.json()
+  return NextResponse.json(data)
+}
+
+export async function DELETE(req: NextRequest) {
+  const { comment_id } = await req.json()
+
+  const res = await fetch(
+    `${GITHUB_API}/repos/${process.env.GITHUB_REPO_OWNER}/${process.env.GITHUB_REPO_NAME}/issues/comments/${comment_id}`,
+    {
+      method: 'DELETE',
+      headers,
+    }
+  )
+
+  if (!res.ok) {
+    return NextResponse.json({ error: 'Kommentar konnte nicht gelöscht werden' }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
 }
