@@ -8,7 +8,6 @@ import Image from 'next/image'
 import Link from './Link'
 import MobileNav from './MobileNav'
 import SearchButton from './SearchButton'
-import DaysSince from './DaysSince'
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true)
@@ -56,9 +55,8 @@ const Header = () => {
               />
             </div>
             {typeof siteMetadata.headerTitle === 'string' ? (
-              <div className="hidden sm:block">
-                <div className="text-2xl font-semibold">{siteMetadata.headerTitle}</div>
-                <DaysSince startDate="2022-09-22" className="text-xs font-light text-gray-500" />
+              <div className="hidden h-6 text-2xl font-semibold sm:block">
+                {siteMetadata.headerTitle}
               </div>
             ) : (
               siteMetadata.headerTitle
