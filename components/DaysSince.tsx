@@ -11,6 +11,7 @@ const DaysSince: React.FC<DaysSinceProps> = ({ startDate, className = '' }) => {
   const [days, setDays] = useState<number>(0)
 
   useEffect(() => {
+    // Berechnet die Anzahl der Tage seit dem Startdatum
     const calculateDays = () => {
       const start = new Date(startDate)
       const today = new Date()
