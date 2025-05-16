@@ -31,6 +31,7 @@
     "@vercel/analytics": "^1.5.0",
     "apexcharts": "^4.5.0",
     "aws-sdk": "^2.1692.0",
+    "axios": "^1.9.0",
     "body-scroll-lock": "^4.0.0-beta.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

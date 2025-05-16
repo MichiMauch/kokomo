@@ -17,22 +17,27 @@ function cleanMarkdown(content: string): string {
 export async function POST(req: Request) {
   const { title } = await req.json()
 
-  const prompt = `Schreibe einen Blogpost-Entwurf im Markdown-Format für das Thema "${title}".
-Der Beitrag soll:
-- auf Hochdeutsch geschrieben sein, jedoch im Stil einer Schweizer Tastatur (z. B. korrekte Anführungszeichen, keine typografischen Varianten)
-- Der Inhalt soll in der DU-Form verfasst sein.
-- eine Länge von 500 bis 800 Wörtern haben
-- den Leser:innen einen Mehrwert bieten
-- den Leser:innen helfen, das Thema besser zu verstehen
-- mit einer kurzen Einleitung starten (ohne Haupttitel – dieser wird separat vergeben)
-- fünf bis sechs Absätze enthalten, die das Thema interessant, informativ und persönlich behandeln
-- Zwischentitel im Format ## Zwischenüberschrift verwenden
-- Mindestens ein externer Link zu einer vertrauenswürdigen Quelle enthalten
-- Wenn passend Aufzählungen oder nummerierten Listen verwenden
-- keine Markdown-Codeblöcke verwenden
-- am Ende abschliessen mit Fazit oder Call-to-Action
+  const prompt = `Schreibe einen Blogpost-Entwurf im Markdown-Format zum Thema "${title}".
 
-Gib nur den reinen Markdown-Inhalt zurück – ohne Umschliessung mit \`\`\` oder ähnlichem.`
+  Ziel: Ein lebendiger, informativer und persönlicher Blogpost, der Leser:innen abholt, unterhält und echten Mehrwert bietet.
+  
+  Der Beitrag soll:
+  - auf Hochdeutsch geschrieben sein, unter Verwendung der Schweizer Tastatur
+  - konsequent in der DU-Form verfasst sein
+  - eine Länge von 500–800 Wörtern erreichen
+  - mit einer neugierig machenden Einleitung starten – etwa mit einer kleinen persönlichen Szene, einem Gedankenexperiment oder einer Frage (ohne Haupttitel – dieser wird separat vergeben)
+  - insgesamt 5–6 Absätze enthalten, die jeweils ein Unterthema tiefgehend behandeln
+  
+  Hinweise zur Tiefe und Struktur:
+  - Jeder dieser Absätze soll 200–250 Wörter umfassen
+  - Jeder Absatz behandelt einen eigenen Aspekt des Themas – mit erklärendem Teil, persönlichem Ton, ggf. Beispiel oder Szene
+  - Verwende wenn passend Aufzählungen oder nummerierte Listen, aber immer eingebettet in den Fliesstext
+  - Verwende Zwischenüberschriften im Format ## Zwischenüberschrift
+  - Baue mindestens einen Link zu einer vertrauenswürdigen externen Quelle ein
+  - Verwende *kein* Markdown-Codeblock (\`\`\`) – gib nur reinen Markdown-Text zurück
+  - Schliess den Beitrag mit einem klaren Fazit oder einem motivierenden Call-to-Action ab
+  
+  Schreibe so, als würdest du einer Freundin oder einem Freund beim Kaffee das Thema erklären – persönlich, greifbar, mit Tiefe und Herz.`
 
   const chat = await openai.chat.completions.create({
     model: 'gpt-4',

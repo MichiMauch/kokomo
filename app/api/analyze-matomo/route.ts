@@ -1,12 +1,10 @@
-// app/api/analyze-matomo/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-// ⏱️ Konfiguration für maximale Ausführungszeit
-export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
+export const maxDuration = 60
 
-const MATOMO_API_URL = 'https://analytics.kokomo.house/matomo/index.php'
-const SITE_ID = '2'
-const TOKEN_AUTH = process.env.MATOMO_TOKEN || ''
+const MATOMO_API_URL = 'https://openmetrics.netnode.ch/index.php'
+const SITE_ID = '6'
+const TOKEN_AUTH = process.env.MATOMO_TOKEN_NETNODE || ''
 
 async function fetchMatomoData(method: string, period: string = 'range', date: string) {
   const params = new URLSearchParams({
@@ -19,17 +17,26 @@ async function fetchMatomoData(method: string, period: string = 'range', date: s
     token_auth: TOKEN_AUTH,
   })
 
-  console.log('🔍 Matomo API Call:', MATOMO_API_URL, params.toString())
-
   const res = await fetch(MATOMO_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString(),
   })
 
-  const data = await res.json()
-  console.log(`✅ Matomo response for ${method}:`, data)
-  return data
+  return await res.json()
+}
+
+function formatDate(d: Date) {
+  return d.toISOString().split('T')[0]
+}
+
+function trimTop<T>(data: T[], max = 3): T[] {
+  return Array.isArray(data) ? data.slice(0, max) : []
+}
+
+function calcChangePercent(current: number, previous: number): number {
+  if (previous === 0) return current === 0 ? 0 : 100
+  return Math.round(((current - previous) / previous) * 100)
 }
 
 type PageData = {
@@ -41,54 +48,139 @@ type PageData = {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('API Call: /api/analyze-matomo')
-
     const body = await req.json()
     const period = body.period || '30'
+    const days = parseInt(period)
 
     const today = new Date()
     const startDate = new Date(today)
-    startDate.setDate(today.getDate() - parseInt(period) + 1)
+    startDate.setDate(today.getDate() - days + 1)
+    const rangeCurrent = `${formatDate(startDate)},${formatDate(today)}`
 
-    const formatDate = (d: Date) => d.toISOString().split('T')[0]
-    const range = `${formatDate(startDate)},${formatDate(today)}`
+    const endDatePrev = new Date(startDate)
+    endDatePrev.setDate(endDatePrev.getDate() - 1)
+    const startDatePrev = new Date(endDatePrev)
+    startDatePrev.setDate(startDatePrev.getDate() - days + 1)
+    const rangePrev = `${formatDate(startDatePrev)},${formatDate(endDatePrev)}`
 
-    const summary = await fetchMatomoData('VisitsSummary.get', 'range', range)
-    const pages = await fetchMatomoData('Actions.getPageTitles', 'range', range)
+    const [
+      summaryCurrent,
+      pagesCurrent,
+      referrersCurrent,
+      devicesCurrent,
+      exitsCurrent,
+      summaryPrev,
+      pagesPrev,
+      referrersPrev,
+      devicesPrev,
+      exitsPrev,
+    ] = await Promise.all([
+      fetchMatomoData('VisitsSummary.get', 'range', rangeCurrent),
+      fetchMatomoData('Actions.getPageTitles', 'range', rangeCurrent),
+      fetchMatomoData('Referrers.getAll', 'range', rangeCurrent),
+      fetchMatomoData('DevicesDetection.getType', 'range', rangeCurrent),
+      fetchMatomoData('Actions.getExitPageTitles', 'range', rangeCurrent),
 
-    let topPages: { title: string; views: number; bounce: number; duration: number }[] = []
+      fetchMatomoData('VisitsSummary.get', 'range', rangePrev),
+      fetchMatomoData('Actions.getPageTitles', 'range', rangePrev),
+      fetchMatomoData('Referrers.getAll', 'range', rangePrev),
+      fetchMatomoData('DevicesDetection.getType', 'range', rangePrev),
+      fetchMatomoData('Actions.getExitPageTitles', 'range', rangePrev),
+    ])
 
-    if (pages?.result !== 'error' && Array.isArray(pages)) {
-      topPages = pages
-        .filter((p: PageData) => p.label)
-        .map((p: PageData) => ({
+    const enrichedPages = pagesCurrent
+      .filter((p: PageData) => p.label)
+      .map((p: PageData) => {
+        const previous = pagesPrev.find((pp: PageData) => pp.label === p.label)
+        const viewsCurr = p.nb_hits
+        const viewsPrev = previous?.nb_hits || 0
+        const bounceCurr = p.bounce_rate
+        const bouncePrev = previous?.bounce_rate || 0
+        const durationCurr = p.avg_time_on_page
+        const durationPrev = previous?.avg_time_on_page || 0
+
+        return {
           title: p.label,
-          views: p.nb_hits,
-          bounce: p.bounce_rate,
-          duration: p.avg_time_on_page,
-        }))
-        .sort((a, b) => b.views - a.views)
-        .slice(0, 20)
-    } else {
-      console.warn('⚠️ Fehler beim Laden der PageTitles:', pages.message)
-    }
+          views: {
+            current: viewsCurr,
+            previous: viewsPrev,
+            changePercent: calcChangePercent(viewsCurr, viewsPrev),
+          },
+          bounce: {
+            current: bounceCurr,
+            previous: bouncePrev,
+            changePercent: calcChangePercent(bounceCurr, bouncePrev),
+          },
+          duration: {
+            current: durationCurr,
+            previous: durationPrev,
+            changePercent: calcChangePercent(durationCurr, durationPrev),
+          },
+        }
+      })
+
+    const topPages = enrichedPages.sort((a, b) => b.views.current - a.views.current).slice(0, 10)
+
+    const topGrowthPages = enrichedPages
+      .filter((p) => p.views.previous > 0 || p.views.current > 0)
+      .sort((a, b) => b.views.changePercent - a.views.changePercent)
+      .slice(0, 3)
 
     const matomoData = {
-      date: `Letzte ${period} Tage`,
-      visitors: summary.nb_visits,
-      pageviews: summary.nb_actions,
-      avgTimeOnSite: summary.avg_time_on_site,
-      bounceRate: summary.bounce_rate,
+      zeitraum: `Letzte ${period} Tage`,
+      vergleichszeitraum: `Vorherige ${period} Tage`,
+      visitors: {
+        current: summaryCurrent.nb_visits,
+        previous: summaryPrev.nb_visits,
+        changePercent: calcChangePercent(summaryCurrent.nb_visits, summaryPrev.nb_visits),
+      },
+      pageviews: {
+        current: summaryCurrent.nb_actions,
+        previous: summaryPrev.nb_actions,
+        changePercent: calcChangePercent(summaryCurrent.nb_actions, summaryPrev.nb_actions),
+      },
+      avgTimeOnSite: {
+        current: summaryCurrent.avg_time_on_site,
+        previous: summaryPrev.avg_time_on_site,
+        changePercent: calcChangePercent(
+          summaryCurrent.avg_time_on_site,
+          summaryPrev.avg_time_on_site
+        ),
+      },
+      bounceRate: {
+        current: summaryCurrent.bounce_rate,
+        previous: summaryPrev.bounce_rate,
+        changePercent: calcChangePercent(summaryCurrent.bounce_rate, summaryPrev.bounce_rate),
+      },
       topPages,
+      topGrowthPages,
+      referrers: {
+        current: trimTop(referrersCurrent),
+        previous: trimTop(referrersPrev),
+      },
+      devices: {
+        current: trimTop(devicesCurrent),
+        previous: trimTop(devicesPrev),
+      },
+      exitPages: {
+        current: trimTop(exitsCurrent),
+        previous: trimTop(exitsPrev),
+      },
     }
 
-    console.log('📊 Matomo Data for GPT:', matomoData)
+    const prompt = `Hier sind Matomo-Daten für zwei Zeiträume:
 
-    const prompt = `Hier sind Matomo-Daten:
+${JSON.stringify(matomoData)}
 
-${JSON.stringify(matomoData, null, 2)}
+Bitte analysiere die Unterschiede. Berücksichtige:
+- Entwicklung der Gesamtkennzahlen
+- Top-Seiten nach Besucherzahl
+- Seiten mit dem grössten Wachstum
+- Absprungrate und Verweildauer
+- Referrer-Quellen, Geräteverteilung, Exit-Pages
 
-Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-Format aus. Verwende Zwischenüberschriften und Absätze.`
+Formuliere eine strukturierte HTML-Antwort in Schweizer Hochdeutsch.
+Nutze Abschnitte, Absätze, Listen und am Ende eine Empfehlung.`
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -98,20 +190,14 @@ Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-
       },
       body: JSON.stringify({
         model: 'gpt-4',
+        max_tokens: 1024,
         messages: [
           {
             role: 'system',
-            content: `Du bist ein erfahrener SEO- und Webanalyse-Experte. Analysiere die folgenden Matomo-Trackingdaten präzise und gib klare, umsetzbare Empfehlungen für die Verbesserung der SEO-Performance der Website.
-                      1. Interpretiere die wichtigsten Kennzahlen (z. B. Seitenaufrufe, Absprungrate, durchschnittliche Besuchsdauer, beliebteste Seiten, Verweildauer).
-                      2. Konvertiere Zeitangaben automatisch in Minuten und Sekunden (z. B. 145 Sekunden → 2 Minuten 25 Sekunden).
-                      3. Gliedere deine Analyse in folgende Abschnitte:
-                        - **Top Insights** (Bulletpoints der wichtigsten Erkenntnisse)
-                        - **Konkrete SEO-Empfehlungen** (verbesserbare Punkte)
-                      4. Antworte in reinem HTML, ohne Markdown, Codeblöcke oder Backticks
-                      5. Gib am Ende einen SEO-Score von 1 bis 100 basierend auf deinen Erkenntnissen zurück.
-                      6. Formatiere die gesamte Antwort als **valide HTML-Ausgabe** (mit <h2>, <ul>, <li>, <p>, <strong> etc.).
-
-                      Verwende ausschliesslich Deutsch (Schweizer Hochdeutsch) und beachte die Formatierung für eine Schweizer Tastatur.`,
+            content: `Du bist ein erfahrener SEO- und Webanalyse-Experte. 
+                      Vergleiche Matomo-Daten aus zwei Zeiträumen, gib klare Empfehlungen. 
+                      Antworte in HTML mit <h2>, <p>, <ul>, <li>, <strong>. 
+                      Konvertiere Zeiten in Minuten/Sekunden.`,
           },
           {
             role: 'user',
@@ -122,12 +208,12 @@ Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-
     })
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'GPT request failed' }, { status: 500 })
+      const errorText = await res.text()
+      console.error('🧨 GPT API Fehlerdetails:', errorText)
+      return NextResponse.json({ error: 'GPT request failed', detail: errorText }, { status: 500 })
     }
 
     const data = await res.json()
-    console.log('✅ GPT response:', data)
-
     let analysis = data.choices?.[0]?.message?.content || 'Keine Antwort erhalten.'
     if (analysis.startsWith('```html')) {
       analysis = analysis

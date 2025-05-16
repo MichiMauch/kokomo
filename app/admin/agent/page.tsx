@@ -80,27 +80,16 @@ export default function AgentPage() {
     if (!plan) return
     setGenerating(true)
 
-    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
-      console.error('❌ Fehlende Umgebungsvariable: NEXT_PUBLIC_OPENAI_API_KEY')
-      setGenerating(false)
-      return
-    }
-
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Verwende unsere eigene API-Route statt direkt OpenAI aufzurufen
+      const res = await fetch('/api/generate-text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'user',
-              content: `Erstelle einen ersten Blogpost für den Titel "${title}" mit folgender Struktur: Ziel: ${plan.ziel}, Zielgruppe: ${plan.zielgruppe}, Gliederung: ${plan.gliederung.join(', ')}. Verwende Markdown mit Zwischenüberschriften. Verwende die schweizer Tastatur.`,
-            },
-          ],
+          title,
+          plan,
         }),
       })
 
@@ -115,7 +104,7 @@ export default function AgentPage() {
         title,
         date: new Date().toISOString().split('T')[0],
         draft: true,
-        body: data.choices?.[0]?.message?.content?.trim() || '',
+        body: data.content || '',
       })
 
       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
@@ -163,9 +152,11 @@ export default function AgentPage() {
             <div>
               <p className="mb-1 font-medium text-gray-700">🔹 Gliederung:</p>
               <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800">
-                {plan.gliederung.map((point, i) => (
-                  <li key={i}>{point}</li>
-                ))}
+                {Array.isArray(plan.gliederung) ? (
+                  plan.gliederung.map((point, i) => <li key={i}>{point}</li>)
+                ) : (
+                  <li>Keine Gliederung verfügbar</li>
+                )}
               </ul>
             </div>
           </div>
