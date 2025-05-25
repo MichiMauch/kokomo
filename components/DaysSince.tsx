@@ -11,7 +11,6 @@ const DaysSince: React.FC<DaysSinceProps> = ({ startDate, className = '' }) => {
   const [days, setDays] = useState<number>(0)
 
   useEffect(() => {
-    // Berechnet die Anzahl der Tage seit dem Startdatum
     const calculateDays = () => {
       const start = new Date(startDate)
       const today = new Date()
@@ -28,8 +27,12 @@ const DaysSince: React.FC<DaysSinceProps> = ({ startDate, className = '' }) => {
       setDays(diffDays)
     }
 
-    // Berechnung bei jedem Laden der Komponente durchführen
     calculateDays()
+
+    // Optional: Täglich aktualisieren (um Mitternacht)
+    const timer = setInterval(calculateDays, 86400000) // 24 Stunden
+
+    return () => clearInterval(timer)
   }, [startDate])
 
   return <span className={className}>seit {days} Tagen</span>

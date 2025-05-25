@@ -9,7 +9,6 @@ import Link from './Link'
 import MobileNav from './MobileNav'
 import SearchButton from './SearchButton'
 import DaysSince from './DaysSince'
-import BatteryStatus from './BatteryStatus'
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true)
@@ -59,10 +58,7 @@ const Header = () => {
             {typeof siteMetadata.headerTitle === 'string' ? (
               <div className="hidden sm:block">
                 <div className="text-2xl font-semibold">{siteMetadata.headerTitle}</div>
-                <div className="flex items-center space-x-2 text-xs font-light text-gray-500">
-                  <DaysSince startDate="2022-09-17" />
-                  <BatteryStatus />
-                </div>
+                <DaysSince startDate="2022-09-22" className="text-xs font-light text-gray-500" />
               </div>
             ) : (
               siteMetadata.headerTitle

@@ -89,6 +89,14 @@ const nextConfig = () => {
           protocol: 'https',
           hostname: 'pub-29ede69a4da644b9b81fa3dd5f8e9d6a.r2.dev',
         },
+        {
+          protocol: 'https',
+          hostname: 'oaidalleapiprodscus.blob.core.windows.net',
+        },
+        {
+          protocol: 'https',
+          hostname: '*.blob.core.windows.net',
+        },
       ],
       unoptimized,
     },
