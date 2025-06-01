@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Test MDX Rendering",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}

@@ -50,7 +50,7 @@
     "next-themes": "^0.3.0",
     "node-cron": "^4.0.5",
     "openai": "^4.93.0",
-    "pliny": "0.4.1",
+    "pliny": "^0.4.1",
     "postcss": "^8.4.24",
     "react": "^18.3.1",
     "react-apexcharts": "^1.7.0",

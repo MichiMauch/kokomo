@@ -4,7 +4,7 @@ import * as React from 'react'
 import TOCInline from 'pliny/ui/TOCInline'
 import Pre from 'pliny/ui/Pre'
 import BlogNewsletterForm from 'pliny/ui/BlogNewsletterForm'
-import type { MDXComponents as MDXComponentsType } from 'mdx/types'
+import type { MDXComponents } from 'mdx/types'
 import Image from 'next/image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
@@ -252,7 +252,7 @@ const MDXGalerie = (props: { images: GalleryImage[] }) => {
 }
 
 // MDX Components mit korrekter Typisierung
-const mdxComponents: MDXComponentsType = {
+const mdxComponents = {
   Image: CustomImage,
   img: CustomImage,
   Galerie: MDXGalerie,
@@ -264,7 +264,7 @@ const mdxComponents: MDXComponentsType = {
   BlogNewsletterForm,
   YouTube: YouTubeEmbed,
   YouTubeEmbed: YouTubeEmbed, // Registrierung unter beiden Namen
-}
+} as MDXComponents
 
-export { mdxComponents as components, GalerieComponent as Galerie, YouTubeEmbed }
+export { mdxComponents as components, GalerieComponent as Galerie }
 export default mdxComponents

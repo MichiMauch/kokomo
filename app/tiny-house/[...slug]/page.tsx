@@ -11,7 +11,6 @@ import type { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 import { notFound } from 'next/navigation'
 import mdxComponents, { Galerie } from '@/components/MDXComponents'
-import YouTubeEmbed from '@/components/YouTubeEmbed'
 
 const defaultLayout = 'PostLayout'
 const layouts = {
@@ -110,7 +109,6 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
   const combinedComponents = {
     ...mdxComponents,
     Galerie, // Stelle sicher, dass Galerie explizit hinzugefügt wird
-    YouTubeEmbed, // Stelle sicher, dass YouTubeEmbed explizit hinzugefügt wird
   }
 
   console.log('Page rendering with components:', Object.keys(combinedComponents)) // Debug log
