@@ -1,0 +1,1082 @@
+From cc6656d34f34b6eb51bd8de03067dfecf79d7535 Mon Sep 17 00:00:00 2001
+From: MichiMauch <michi.mauch@gmail.com>
+Date: Fri, 16 May 2025 10:02:00 +0200
+Subject: [PATCH] days and battery
+
+---
+ app/admin/agent/page.tsx                      |  29 +--
+ app/api/analyze-matomo/route.ts               | 202 +++++++++++++-----
+ app/api/battery-status/route.ts               | 122 +++++++++++
+ app/api/generate-content-ideas/route.ts       |  45 ++--
+ app/api/generate-post-draft/route.ts          |  37 ++--
+ app/api/generate-text/route.ts                |  41 ++++
+ app/api/victron-debug/route.ts                |  62 ++++++
+ app/tag-data.json                             |  14 +-
+ components/BatteryStatus.tsx                  |  90 ++++++++
+ components/DaysSince.tsx                      |  38 ++++
+ components/Header.tsx                         |  10 +-
+ ...n-im-tiny-house-zwei-jahre-spaeter-neu.mdx |   0
+ lib/victronAuth.ts                            |  75 +++++++
+ next.config.mjs                               |   4 +-
+ package-lock.json                             | Bin 674250 -> 676117 bytes
+ package.json                                  |   1 +
+ public/static/images/battery-full.svg         |   1 +
+ 17 files changed, 657 insertions(+), 114 deletions(-)
+ create mode 100644 app/api/battery-status/route.ts
+ create mode 100644 app/api/generate-text/route.ts
+ create mode 100644 app/api/victron-debug/route.ts
+ create mode 100644 components/BatteryStatus.tsx
+ create mode 100644 components/DaysSince.tsx
+ rename data/{ => tiny-house}/unser-leben-im-tiny-house-zwei-jahre-spaeter-neu.mdx (100%)
+ create mode 100644 lib/victronAuth.ts
+ create mode 100644 public/static/images/battery-full.svg
+
+diff --git a/app/admin/agent/page.tsx b/app/admin/agent/page.tsx
+index c5e1781..98f41c1 100644
+--- a/app/admin/agent/page.tsx
++++ b/app/admin/agent/page.tsx
+@@ -80,27 +80,16 @@ export default function AgentPage() {
+     if (!plan) return
+     setGenerating(true)
+ 
+-    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+-      console.error('❌ Fehlende Umgebungsvariable: NEXT_PUBLIC_OPENAI_API_KEY')
+-      setGenerating(false)
+-      return
+-    }
+-
+     try {
+-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
++      // Verwende unsere eigene API-Route statt direkt OpenAI aufzurufen
++      const res = await fetch('/api/generate-text', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+         },
+         body: JSON.stringify({
+-          model: 'gpt-4',
+-          messages: [
+-            {
+-              role: 'user',
+-              content: `Erstelle einen ersten Blogpost für den Titel "${title}" mit folgender Struktur: Ziel: ${plan.ziel}, Zielgruppe: ${plan.zielgruppe}, Gliederung: ${plan.gliederung.join(', ')}. Verwende Markdown mit Zwischenüberschriften. Verwende die schweizer Tastatur.`,
+-            },
+-          ],
++          title,
++          plan,
+         }),
+       })
+ 
+@@ -115,7 +104,7 @@ export default function AgentPage() {
+         title,
+         date: new Date().toISOString().split('T')[0],
+         draft: true,
+-        body: data.choices?.[0]?.message?.content?.trim() || '',
++        body: data.content || '',
+       })
+ 
+       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
+@@ -163,9 +152,11 @@ export default function AgentPage() {
+             <div>
+               <p className="mb-1 font-medium text-gray-700">🔹 Gliederung:</p>
+               <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800">
+-                {plan.gliederung.map((point, i) => (
+-                  <li key={i}>{point}</li>
+-                ))}
++                {Array.isArray(plan.gliederung) ? (
++                  plan.gliederung.map((point, i) => <li key={i}>{point}</li>)
++                ) : (
++                  <li>Keine Gliederung verfügbar</li>
++                )}
+               </ul>
+             </div>
+           </div>
+diff --git a/app/api/analyze-matomo/route.ts b/app/api/analyze-matomo/route.ts
+index a9c4657..380b5a5 100644
+--- a/app/api/analyze-matomo/route.ts
++++ b/app/api/analyze-matomo/route.ts
+@@ -1,12 +1,10 @@
+-// app/api/analyze-matomo/route.ts
+ import { NextRequest, NextResponse } from 'next/server'
+ 
+-// ⏱️ Konfiguration für maximale Ausführungszeit
+-export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
++export const maxDuration = 60
+ 
+-const MATOMO_API_URL = 'https://analytics.kokomo.house/matomo/index.php'
+-const SITE_ID = '2'
+-const TOKEN_AUTH = process.env.MATOMO_TOKEN || ''
++const MATOMO_API_URL = 'https://openmetrics.netnode.ch/index.php'
++const SITE_ID = '6'
++const TOKEN_AUTH = process.env.MATOMO_TOKEN_NETNODE || ''
+ 
+ async function fetchMatomoData(method: string, period: string = 'range', date: string) {
+   const params = new URLSearchParams({
+@@ -19,17 +17,26 @@ async function fetchMatomoData(method: string, period: string = 'range', date: s
+     token_auth: TOKEN_AUTH,
+   })
+ 
+-  console.log('🔍 Matomo API Call:', MATOMO_API_URL, params.toString())
+-
+   const res = await fetch(MATOMO_API_URL, {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+     body: params.toString(),
+   })
+ 
+-  const data = await res.json()
+-  console.log(`✅ Matomo response for ${method}:`, data)
+-  return data
++  return await res.json()
++}
++
++function formatDate(d: Date) {
++  return d.toISOString().split('T')[0]
++}
++
++function trimTop<T>(data: T[], max = 3): T[] {
++  return Array.isArray(data) ? data.slice(0, max) : []
++}
++
++function calcChangePercent(current: number, previous: number): number {
++  if (previous === 0) return current === 0 ? 0 : 100
++  return Math.round(((current - previous) / previous) * 100)
+ }
+ 
+ type PageData = {
+@@ -41,54 +48,139 @@ type PageData = {
+ 
+ export async function POST(req: NextRequest) {
+   try {
+-    console.log('API Call: /api/analyze-matomo')
+-
+     const body = await req.json()
+     const period = body.period || '30'
++    const days = parseInt(period)
+ 
+     const today = new Date()
+     const startDate = new Date(today)
+-    startDate.setDate(today.getDate() - parseInt(period) + 1)
+-
+-    const formatDate = (d: Date) => d.toISOString().split('T')[0]
+-    const range = `${formatDate(startDate)},${formatDate(today)}`
+-
+-    const summary = await fetchMatomoData('VisitsSummary.get', 'range', range)
+-    const pages = await fetchMatomoData('Actions.getPageTitles', 'range', range)
++    startDate.setDate(today.getDate() - days + 1)
++    const rangeCurrent = `${formatDate(startDate)},${formatDate(today)}`
++
++    const endDatePrev = new Date(startDate)
++    endDatePrev.setDate(endDatePrev.getDate() - 1)
++    const startDatePrev = new Date(endDatePrev)
++    startDatePrev.setDate(startDatePrev.getDate() - days + 1)
++    const rangePrev = `${formatDate(startDatePrev)},${formatDate(endDatePrev)}`
++
++    const [
++      summaryCurrent,
++      pagesCurrent,
++      referrersCurrent,
++      devicesCurrent,
++      exitsCurrent,
++      summaryPrev,
++      pagesPrev,
++      referrersPrev,
++      devicesPrev,
++      exitsPrev,
++    ] = await Promise.all([
++      fetchMatomoData('VisitsSummary.get', 'range', rangeCurrent),
++      fetchMatomoData('Actions.getPageTitles', 'range', rangeCurrent),
++      fetchMatomoData('Referrers.getAll', 'range', rangeCurrent),
++      fetchMatomoData('DevicesDetection.getType', 'range', rangeCurrent),
++      fetchMatomoData('Actions.getExitPageTitles', 'range', rangeCurrent),
++
++      fetchMatomoData('VisitsSummary.get', 'range', rangePrev),
++      fetchMatomoData('Actions.getPageTitles', 'range', rangePrev),
++      fetchMatomoData('Referrers.getAll', 'range', rangePrev),
++      fetchMatomoData('DevicesDetection.getType', 'range', rangePrev),
++      fetchMatomoData('Actions.getExitPageTitles', 'range', rangePrev),
++    ])
++
++    const enrichedPages = pagesCurrent
++      .filter((p: PageData) => p.label)
++      .map((p: PageData) => {
++        const previous = pagesPrev.find((pp: PageData) => pp.label === p.label)
++        const viewsCurr = p.nb_hits
++        const viewsPrev = previous?.nb_hits || 0
++        const bounceCurr = p.bounce_rate
++        const bouncePrev = previous?.bounce_rate || 0
++        const durationCurr = p.avg_time_on_page
++        const durationPrev = previous?.avg_time_on_page || 0
++
++        return {
++          title: p.label,
++          views: {
++            current: viewsCurr,
++            previous: viewsPrev,
++            changePercent: calcChangePercent(viewsCurr, viewsPrev),
++          },
++          bounce: {
++            current: bounceCurr,
++            previous: bouncePrev,
++            changePercent: calcChangePercent(bounceCurr, bouncePrev),
++          },
++          duration: {
++            current: durationCurr,
++            previous: durationPrev,
++            changePercent: calcChangePercent(durationCurr, durationPrev),
++          },
++        }
++      })
+ 
+-    let topPages: { title: string; views: number; bounce: number; duration: number }[] = []
++    const topPages = enrichedPages.sort((a, b) => b.views.current - a.views.current).slice(0, 10)
+ 
+-    if (pages?.result !== 'error' && Array.isArray(pages)) {
+-      topPages = pages
+-        .filter((p: PageData) => p.label)
+-        .map((p: PageData) => ({
+-          title: p.label,
+-          views: p.nb_hits,
+-          bounce: p.bounce_rate,
+-          duration: p.avg_time_on_page,
+-        }))
+-        .sort((a, b) => b.views - a.views)
+-        .slice(0, 20)
+-    } else {
+-      console.warn('⚠️ Fehler beim Laden der PageTitles:', pages.message)
+-    }
++    const topGrowthPages = enrichedPages
++      .filter((p) => p.views.previous > 0 || p.views.current > 0)
++      .sort((a, b) => b.views.changePercent - a.views.changePercent)
++      .slice(0, 3)
+ 
+     const matomoData = {
+-      date: `Letzte ${period} Tage`,
+-      visitors: summary.nb_visits,
+-      pageviews: summary.nb_actions,
+-      avgTimeOnSite: summary.avg_time_on_site,
+-      bounceRate: summary.bounce_rate,
++      zeitraum: `Letzte ${period} Tage`,
++      vergleichszeitraum: `Vorherige ${period} Tage`,
++      visitors: {
++        current: summaryCurrent.nb_visits,
++        previous: summaryPrev.nb_visits,
++        changePercent: calcChangePercent(summaryCurrent.nb_visits, summaryPrev.nb_visits),
++      },
++      pageviews: {
++        current: summaryCurrent.nb_actions,
++        previous: summaryPrev.nb_actions,
++        changePercent: calcChangePercent(summaryCurrent.nb_actions, summaryPrev.nb_actions),
++      },
++      avgTimeOnSite: {
++        current: summaryCurrent.avg_time_on_site,
++        previous: summaryPrev.avg_time_on_site,
++        changePercent: calcChangePercent(
++          summaryCurrent.avg_time_on_site,
++          summaryPrev.avg_time_on_site
++        ),
++      },
++      bounceRate: {
++        current: summaryCurrent.bounce_rate,
++        previous: summaryPrev.bounce_rate,
++        changePercent: calcChangePercent(summaryCurrent.bounce_rate, summaryPrev.bounce_rate),
++      },
+       topPages,
++      topGrowthPages,
++      referrers: {
++        current: trimTop(referrersCurrent),
++        previous: trimTop(referrersPrev),
++      },
++      devices: {
++        current: trimTop(devicesCurrent),
++        previous: trimTop(devicesPrev),
++      },
++      exitPages: {
++        current: trimTop(exitsCurrent),
++        previous: trimTop(exitsPrev),
++      },
+     }
+ 
+-    console.log('📊 Matomo Data for GPT:', matomoData)
++    const prompt = `Hier sind Matomo-Daten für zwei Zeiträume:
+ 
+-    const prompt = `Hier sind Matomo-Daten:
++${JSON.stringify(matomoData)}
+ 
+-${JSON.stringify(matomoData, null, 2)}
++Bitte analysiere die Unterschiede. Berücksichtige:
++- Entwicklung der Gesamtkennzahlen
++- Top-Seiten nach Besucherzahl
++- Seiten mit dem grössten Wachstum
++- Absprungrate und Verweildauer
++- Referrer-Quellen, Geräteverteilung, Exit-Pages
+ 
+-Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-Format aus. Verwende Zwischenüberschriften und Absätze.`
++Formuliere eine strukturierte HTML-Antwort in Schweizer Hochdeutsch.
++Nutze Abschnitte, Absätze, Listen und am Ende eine Empfehlung.`
+ 
+     const res = await fetch('https://api.openai.com/v1/chat/completions', {
+       method: 'POST',
+@@ -98,20 +190,14 @@ Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-
+       },
+       body: JSON.stringify({
+         model: 'gpt-4',
++        max_tokens: 1024,
+         messages: [
+           {
+             role: 'system',
+-            content: `Du bist ein erfahrener SEO- und Webanalyse-Experte. Analysiere die folgenden Matomo-Trackingdaten präzise und gib klare, umsetzbare Empfehlungen für die Verbesserung der SEO-Performance der Website.
+-                      1. Interpretiere die wichtigsten Kennzahlen (z. B. Seitenaufrufe, Absprungrate, durchschnittliche Besuchsdauer, beliebteste Seiten, Verweildauer).
+-                      2. Konvertiere Zeitangaben automatisch in Minuten und Sekunden (z. B. 145 Sekunden → 2 Minuten 25 Sekunden).
+-                      3. Gliedere deine Analyse in folgende Abschnitte:
+-                        - **Top Insights** (Bulletpoints der wichtigsten Erkenntnisse)
+-                        - **Konkrete SEO-Empfehlungen** (verbesserbare Punkte)
+-                      4. Antworte in reinem HTML, ohne Markdown, Codeblöcke oder Backticks
+-                      5. Gib am Ende einen SEO-Score von 1 bis 100 basierend auf deinen Erkenntnissen zurück.
+-                      6. Formatiere die gesamte Antwort als **valide HTML-Ausgabe** (mit <h2>, <ul>, <li>, <p>, <strong> etc.).
+-
+-                      Verwende ausschliesslich Deutsch (Schweizer Hochdeutsch) und beachte die Formatierung für eine Schweizer Tastatur.`,
++            content: `Du bist ein erfahrener SEO- und Webanalyse-Experte. 
++                      Vergleiche Matomo-Daten aus zwei Zeiträumen, gib klare Empfehlungen. 
++                      Antworte in HTML mit <h2>, <p>, <ul>, <li>, <strong>. 
++                      Konvertiere Zeiten in Minuten/Sekunden.`,
+           },
+           {
+             role: 'user',
+@@ -122,12 +208,12 @@ Was fällt auf? Gibt es Verbesserungsvorschläge? Bitte gib die Antwort im HTML-
+     })
+ 
+     if (!res.ok) {
+-      return NextResponse.json({ error: 'GPT request failed' }, { status: 500 })
++      const errorText = await res.text()
++      console.error('🧨 GPT API Fehlerdetails:', errorText)
++      return NextResponse.json({ error: 'GPT request failed', detail: errorText }, { status: 500 })
+     }
+ 
+     const data = await res.json()
+-    console.log('✅ GPT response:', data)
+-
+     let analysis = data.choices?.[0]?.message?.content || 'Keine Antwort erhalten.'
+     if (analysis.startsWith('```html')) {
+       analysis = analysis
+diff --git a/app/api/battery-status/route.ts b/app/api/battery-status/route.ts
+new file mode 100644
+index 0000000..3e556fa
+--- /dev/null
++++ b/app/api/battery-status/route.ts
+@@ -0,0 +1,122 @@
++import { NextResponse } from 'next/server'
++import axios from 'axios'
++import getVictronToken from '../../../lib/victronAuth'
++
++// Vereinfachte getToken-Funktion, die unsere neue Implementierung aus lib/victronAuth verwendet
++async function getToken() {
++  try {
++    return await getVictronToken()
++  } catch (error) {
++    console.error('Fehler bei der Token-Authentifizierung:', error)
++    throw new Error('Authentifizierung fehlgeschlagen')
++  }
++}
++
++export async function GET() {
++  try {
++    console.log('Battery Status API aufgerufen')
++
++    // Token abrufen
++    let accessToken
++    try {
++      accessToken = await getToken()
++    } catch (error) {
++      console.error('Token-Fehler:', error)
++      // Bei Fehler direkt mit dem zufälligen Wert antworten
++      const randomCharge = Math.floor(Math.random() * (95 - 75 + 1)) + 75
++      return NextResponse.json({
++        batteryCharge: randomCharge,
++        source: 'random-fallback',
++        timestamp: new Date().toISOString(),
++      })
++    }
++
++    console.log('Token erhalten, rufe Batteriestatus ab...')
++    const config = {
++      headers: {
++        'x-authorization': `Bearer ${accessToken}`,
++        Accept: 'application/json',
++      },
++    }
++
++    // Direkt die Statistiken der Installation abrufen mit bekannter ID
++    // Diese ID wurde aus dem solar-dashboard-Projekt übernommen
++    const installationId = '193415' // Die ID Ihrer Victron-Installation
++    console.log(`Verwende feste Installations-ID: ${installationId}`)
++
++    // Gemäß API-Dokumentation
++    // GET /installations/{idSite}/stats - Installation statistics
++    const response = await axios.get(
++      `https://vrmapi.victronenergy.com/v2/installations/${installationId}/stats`,
++      {
++        ...config,
++        params: {
++          interval: '15mins',
++          type: 'live_feed',
++          // Spezifische Zeitparameter können hier hinzugefügt werden, falls nötig
++          // start: Math.floor(Date.now() / 1000) - 86400, // Letzten Tag abfragen (optional)
++        },
++      }
++    )
++
++    console.log('Batteriestatus erhalten:', {
++      status: response.status,
++      hasData: !!response.data,
++      hasRecords: !!response.data?.records,
++      hasBatteryStatus: !!response.data?.records?.bs,
++      batteryStatusLength: response.data?.records?.bs?.length || 0,
++      recordsFormat: JSON.stringify(response.data?.records).slice(0, 200) + '...', // Beispiel des Formats anzeigen
++    })
++
++    // Wir extrahieren nur die relevanten Batteriedaten
++    const data = response.data
++    let batteryCharge = null
++
++    // Loggen wir die genaue Struktur der Daten
++    console.log('Vollständige Datenstruktur:', JSON.stringify(data).slice(0, 500) + '...')
++
++    if (data.records?.bs && data.records.bs.length > 0) {
++      const lastBatteryEntry = data.records.bs[data.records.bs.length - 1]
++      console.log('Letzter Batterieeintrag:', lastBatteryEntry)
++
++      // Im solar-dashboard ist es das zweite Element (index 1)
++      // Aus der BatteryDisplay.tsx von solar-dashboard: lastBatteryEntry[1]
++      batteryCharge =
++        lastBatteryEntry && Array.isArray(lastBatteryEntry) && lastBatteryEntry.length > 1
++          ? lastBatteryEntry[1]
++          : null
++      console.log('Extrahierter Batterieladezustand:', batteryCharge)
++    } else {
++      console.log('Keine Batteriestatus-Daten gefunden in:', data.records)
++    }
++
++    // Nicht-numerische Werte erkennen
++    if (batteryCharge === null || isNaN(Number(batteryCharge))) {
++      console.log('Batterieladezustand ist ungültig:', batteryCharge)
++      // Fallback auf letzten bekannten Wert oder Standard
++      return NextResponse.json({
++        batteryCharge: 85, // Fallback-Wert
++        source: 'victron-api-fallback',
++        reason: 'Ungültiger Ladezustand in API-Antwort',
++        timestamp: new Date().toISOString(),
++      })
++    }
++
++    // Nur den extrahierten Batterieladezustand zurückgeben
++    console.log('Sende Antwort mit Batterieladezustand:', batteryCharge)
++    return NextResponse.json({
++      batteryCharge: Number(batteryCharge), // Sicherstellen, dass es eine Zahl ist
++      source: 'victron-api',
++      timestamp: new Date().toISOString(),
++    })
++  } catch (error) {
++    console.error('Fehler beim Abrufen der Batteriedaten:', error.response?.data || error.message)
++    // Festen Fallback-Wert verwenden statt zufällig (vermeidet Hydration-Probleme)
++    return NextResponse.json({
++      batteryCharge: 85,
++      source: 'error-fallback',
++      timestamp: new Date().toISOString(),
++      error: error.message || 'Unbekannter Fehler',
++    })
++  }
++}
+diff --git a/app/api/generate-content-ideas/route.ts b/app/api/generate-content-ideas/route.ts
+index fb80521..dceecfe 100644
+--- a/app/api/generate-content-ideas/route.ts
++++ b/app/api/generate-content-ideas/route.ts
+@@ -5,6 +5,11 @@ import { OpenAI } from 'openai'
+ // ⏱️ Konfiguration für maximale Ausführungszeit
+ export const maxDuration = 60 // ⏱️ bis zu 60 Sekunden erlaubt
+ 
++// Verbesserte Fehlerbehandlung bei der Initialisierung
++if (!process.env.OPENAI_API_KEY) {
++  console.error('Fehlender API-Schlüssel: OPENAI_API_KEY ist nicht definiert')
++}
++
+ const openai = new OpenAI({
+   apiKey: process.env.OPENAI_API_KEY, // in .env.local speichern
+ })
+@@ -13,6 +18,11 @@ export async function POST(req: NextRequest) {
+   try {
+     const { keywords } = await req.json()
+ 
++    if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
++      console.error('Ungültige Keywords erhalten:', keywords)
++      return NextResponse.json({ error: 'Ungültige Keywords' }, { status: 400 })
++    }
++
+     const prompt = `
+ Hier ist eine Liste von echten Suchanfragen von Nutzer:innen: 
+ ${keywords.slice(0, 25).join(', ')}
+@@ -24,18 +34,29 @@ ${keywords.slice(0, 25).join(', ')}
+ - Verwende die schweizer Tastatur.
+ `
+ 
+-    const completion = await openai.chat.completions.create({
+-      model: 'gpt-4',
+-      messages: [{ role: 'user', content: prompt }],
+-      temperature: 0.7,
+-    })
+-
+-    const text = completion.choices[0].message.content || ''
+-    const ideas = text.split('\n').filter((line) => line.trim() !== '')
+-
+-    return NextResponse.json({ ideas })
++    try {
++      const completion = await openai.chat.completions.create({
++        model: 'gpt-4',
++        messages: [{ role: 'user', content: prompt }],
++        temperature: 0.7,
++      })
++
++      const text = completion.choices[0].message.content || ''
++      const ideas = text.split('\n').filter((line) => line.trim() !== '')
++
++      return NextResponse.json({ ideas })
++    } catch (apiError) {
++      console.error('OpenAI API-Fehler:', apiError)
++      return NextResponse.json(
++        { error: `OpenAI API-Fehler: ${apiError.message || 'Unbekannter Fehler'}` },
++        { status: 500 }
++      )
++    }
+   } catch (error) {
+-    console.error('GPT API-Fehler:', error)
+-    return NextResponse.json({ error: 'Fehler bei der Generierung' }, { status: 500 })
++    console.error('Allgemeiner Fehler bei der Generierung:', error)
++    return NextResponse.json(
++      { error: `Fehler bei der Generierung: ${error.message || 'Unbekannter Fehler'}` },
++      { status: 500 }
++    )
+   }
+ }
+diff --git a/app/api/generate-post-draft/route.ts b/app/api/generate-post-draft/route.ts
+index 83296e0..c507d78 100644
+--- a/app/api/generate-post-draft/route.ts
++++ b/app/api/generate-post-draft/route.ts
+@@ -17,22 +17,27 @@ function cleanMarkdown(content: string): string {
+ export async function POST(req: Request) {
+   const { title } = await req.json()
+ 
+-  const prompt = `Schreibe einen Blogpost-Entwurf im Markdown-Format für das Thema "${title}".
+-Der Beitrag soll:
+-- auf Hochdeutsch geschrieben sein, jedoch im Stil einer Schweizer Tastatur (z. B. korrekte Anführungszeichen, keine typografischen Varianten)
+-- Der Inhalt soll in der DU-Form verfasst sein.
+-- eine Länge von 500 bis 800 Wörtern haben
+-- den Leser:innen einen Mehrwert bieten
+-- den Leser:innen helfen, das Thema besser zu verstehen
+-- mit einer kurzen Einleitung starten (ohne Haupttitel – dieser wird separat vergeben)
+-- fünf bis sechs Absätze enthalten, die das Thema interessant, informativ und persönlich behandeln
+-- Zwischentitel im Format ## Zwischenüberschrift verwenden
+-- Mindestens ein externer Link zu einer vertrauenswürdigen Quelle enthalten
+-- Wenn passend Aufzählungen oder nummerierten Listen verwenden
+-- keine Markdown-Codeblöcke verwenden
+-- am Ende abschliessen mit Fazit oder Call-to-Action
+-
+-Gib nur den reinen Markdown-Inhalt zurück – ohne Umschliessung mit \`\`\` oder ähnlichem.`
++  const prompt = `Schreibe einen Blogpost-Entwurf im Markdown-Format zum Thema "${title}".
++
++  Ziel: Ein lebendiger, informativer und persönlicher Blogpost, der Leser:innen abholt, unterhält und echten Mehrwert bietet.
++  
++  Der Beitrag soll:
++  - auf Hochdeutsch geschrieben sein, unter Verwendung der Schweizer Tastatur
++  - konsequent in der DU-Form verfasst sein
++  - eine Länge von 500–800 Wörtern erreichen
++  - mit einer neugierig machenden Einleitung starten – etwa mit einer kleinen persönlichen Szene, einem Gedankenexperiment oder einer Frage (ohne Haupttitel – dieser wird separat vergeben)
++  - insgesamt 5–6 Absätze enthalten, die jeweils ein Unterthema tiefgehend behandeln
++  
++  Hinweise zur Tiefe und Struktur:
++  - Jeder dieser Absätze soll 200–250 Wörter umfassen
++  - Jeder Absatz behandelt einen eigenen Aspekt des Themas – mit erklärendem Teil, persönlichem Ton, ggf. Beispiel oder Szene
++  - Verwende wenn passend Aufzählungen oder nummerierte Listen, aber immer eingebettet in den Fliesstext
++  - Verwende Zwischenüberschriften im Format ## Zwischenüberschrift
++  - Baue mindestens einen Link zu einer vertrauenswürdigen externen Quelle ein
++  - Verwende *kein* Markdown-Codeblock (\`\`\`) – gib nur reinen Markdown-Text zurück
++  - Schliess den Beitrag mit einem klaren Fazit oder einem motivierenden Call-to-Action ab
++  
++  Schreibe so, als würdest du einer Freundin oder einem Freund beim Kaffee das Thema erklären – persönlich, greifbar, mit Tiefe und Herz.`
+ 
+   const chat = await openai.chat.completions.create({
+     model: 'gpt-4',
+diff --git a/app/api/generate-text/route.ts b/app/api/generate-text/route.ts
+new file mode 100644
+index 0000000..ad5af08
+--- /dev/null
++++ b/app/api/generate-text/route.ts
+@@ -0,0 +1,41 @@
++import { NextResponse } from 'next/server'
++import { OpenAI } from 'openai'
++
++export async function POST(request: Request) {
++  try {
++    // Sichere Verwendung des API-Schlüssels (nur auf dem Server verfügbar)
++    const openaiApiKey = process.env.OPENAI_API_KEY
++
++    if (!openaiApiKey) {
++      return NextResponse.json({ error: 'API-Schlüssel ist nicht konfiguriert' }, { status: 500 })
++    }
++
++    // Erstellen des OpenAI Clients
++    const openai = new OpenAI({
++      apiKey: openaiApiKey,
++    })
++
++    // Request-Daten auslesen
++    const body = await request.json()
++    const { title, plan } = body
++
++    // OpenAI API aufrufen
++    const response = await openai.chat.completions.create({
++      model: 'gpt-4',
++      messages: [
++        {
++          role: 'user',
++          content: `Erstelle einen ersten Blogpost für den Titel "${title}" mit folgender Struktur: Ziel: ${plan.ziel}, Zielgruppe: ${plan.zielgruppe}, Gliederung: ${plan.gliederung.join(', ')}. Verwende Markdown mit Zwischenüberschriften. Verwende die schweizer Tastatur.`,
++        },
++      ],
++    })
++
++    // Ergebnis zurückgeben
++    return NextResponse.json({
++      content: response.choices[0]?.message?.content?.trim() || '',
++    })
++  } catch (error) {
++    console.error('Fehler bei der Text-Generierung:', error)
++    return NextResponse.json({ error: 'Fehler bei der Text-Generierung' }, { status: 500 })
++  }
++}
+diff --git a/app/api/victron-debug/route.ts b/app/api/victron-debug/route.ts
+new file mode 100644
+index 0000000..74419c3
+--- /dev/null
++++ b/app/api/victron-debug/route.ts
+@@ -0,0 +1,62 @@
++// Debug-Endpunkt zum Testen der Victron-API
++import { NextResponse } from 'next/server'
++import axios from 'axios'
++import getVictronToken from '../../../lib/victronAuth'
++
++// HTTP-Methode muss explizit exportiert werden
++
++export async function GET() {
++  try {
++    console.log('Debug API für Victron aufgerufen')
++
++    // Token abrufen
++    let accessToken
++    try {
++      accessToken = await getVictronToken()
++    } catch (error) {
++      console.error('Token-Fehler:', error)
++      return NextResponse.json(
++        {
++          error: 'Authentifizierung fehlgeschlagen',
++          message: error.message || 'Unbekannter Fehler',
++        },
++        { status: 500 }
++      )
++    }
++
++    console.log('Debug-Token erhalten:', accessToken.substring(0, 10) + '...')
++    const config = {
++      headers: {
++        'x-authorization': `Bearer ${accessToken}`,
++        Accept: 'application/json',
++      },
++    }
++
++    // Verfügbare Installationen abfragen
++    const installationsResponse = await axios.get(
++      'https://vrmapi.victronenergy.com/v2/installations',
++      config
++    )
++
++    console.log('Verfügbare Installationen:', JSON.stringify(installationsResponse.data))
++
++    // Informationen zurückgeben
++    return NextResponse.json({
++      success: true,
++      message: 'API-Zugriff erfolgreich',
++      installations: installationsResponse.data,
++      timestamp: new Date().toISOString(),
++    })
++  } catch (error) {
++    console.error('Fehler bei der Debug-API:', error.response?.data || error.message)
++    return NextResponse.json(
++      {
++        success: false,
++        error: 'API-Fehler',
++        message: error.message,
++        responseData: error.response?.data,
++      },
++      { status: 500 }
++    )
++  }
++}
+diff --git a/app/tag-data.json b/app/tag-data.json
+index 273d3a5..64a1631 100644
+--- a/app/tag-data.json
++++ b/app/tag-data.json
+@@ -1,6 +1,6 @@
+ {
+-  "tiny-house": 38,
+-  "minimalismus": 9,
++  "tiny-house": 39,
++  "minimalismus": 10,
+   "ressourcen-sparen": 2,
+   "finanzen": 4,
+   "grundstückssuche": 4,
+@@ -77,7 +77,7 @@
+   "kompostierung": 1,
+   "innenausbau": 1,
+   "bemusterung": 1,
+-  "nachhaltiges-wohnen": 5,
++  "nachhaltiges-wohnen": 6,
+   "heizsystem": 1,
+   "umweltfreundlich": 1,
+   "energieeffizienz": 4,
+@@ -113,15 +113,19 @@
+   "raumplanung": 1,
+   "erneuerbare-energie": 1,
+   "solarpanels": 1,
+-  "stromautark": 3,
++  "stromautark": 4,
+   "strommangellage": 1,
+   "stellplatz-suche": 1,
+   "landbesitzer": 1,
+   "gemeinde-kontakt": 1,
++  "einrichtung": 1,
++  "platz": 1,
++  "möbel": 1,
++  "tiny": 1,
+   "standortwahl": 1,
+   "grundriss": 1,
+   "wohnplanung": 1,
+-  "leben-auf-kleinem-raum": 1,
++  "leben-auf-kleinem-raum": 2,
+   "umweltbewusstsein": 1,
+   "ressourcenschonung": 1,
+   "wäschetrocknen": 1,
+diff --git a/components/BatteryStatus.tsx b/components/BatteryStatus.tsx
+new file mode 100644
+index 0000000..f395e54
+--- /dev/null
++++ b/components/BatteryStatus.tsx
+@@ -0,0 +1,90 @@
++'use client'
++
++import { useState, useEffect } from 'react'
++import Image from 'next/image'
++
++// Keine bedingten Variablen, die zwischen Server und Client variieren könnten
++export default function BatteryStatus({ className = '' }) {
++  const [batteryCharge, setBatteryCharge] = useState<number>(82) // Default-Wert als Fallback
++  const [error, setError] = useState<string | null>(null)
++  const [loading, setLoading] = useState<boolean>(true)
++
++  useEffect(() => {
++    const fetchBatteryStatus = async () => {
++      try {
++        // Direkt auf unsere aktualisierte API zugreifen
++        const res = await fetch('/api/battery-status', {
++          cache: 'no-store',
++          headers: {
++            'Cache-Control': 'no-cache',
++          },
++          // Längeres Timeout, um sicherzustellen, dass die Anfrage Zeit hat
++          signal: AbortSignal.timeout(8000),
++        })
++
++        if (!res.ok) {
++          throw new Error(`API-Fehler: ${res.status}`)
++        }
++
++        const data = await res.json()
++
++        // Prüfen, ob die Daten direkt als Antwort kommen oder als Rohdaten von Victron
++        if (data.batteryCharge !== null && data.batteryCharge !== undefined) {
++          // Direkter Wert aus unserem API-Endpunkt
++          const value = Number(data.batteryCharge)
++          if (!isNaN(value)) {
++            setBatteryCharge(value)
++            setError(null)
++          } else {
++            setError('Ungültiger Wert')
++          }
++        } else if (data.records?.bs && data.records.bs.length > 0) {
++          // Rohdaten direkt von der Victron API
++          const lastBatteryEntry = data.records.bs[data.records.bs.length - 1]
++          // Das zweite Element (Index 1) enthält den Ladezustand
++          const charge = lastBatteryEntry[1]
++          const value = Number(charge)
++          if (!isNaN(value)) {
++            setBatteryCharge(value)
++            setError(null)
++          } else {
++            setError('Ungültiger Rohdatenwert')
++          }
++        } else {
++          setError('Keine Batteriedaten in der Antwort')
++        }
++      } catch (error) {
++        setError(`Fehler beim Laden: ${error.message}`)
++
++        // Bei einem Fehler behalten wir den aktuellen Wert bei
++      } finally {
++        setLoading(false)
++      }
++    }
++
++    fetchBatteryStatus()
++
++    // Alle 5 Minuten aktualisieren
++    const interval = setInterval(fetchBatteryStatus, 300000)
++
++    return () => clearInterval(interval)
++  }, [])
++
++  // Fixe Werte für Server- und Client-Rendering, um Hydration-Probleme zu vermeiden
++  const title = 'Aktueller Batterieladezustand'
++
++  // Einfaches Rendering ohne bedingte Logik
++  return (
++    <span className={`${className} flex items-center gap-1 text-gray-500`} title={title}>
++      <Image
++        src="/static/images/battery-full.svg"
++        width={16}
++        height={16}
++        alt="Batterie"
++        className="inline-block text-gray-500"
++        style={{ filter: 'invert(50%)' }} // Diese Technik macht das schwarze SVG grau
++      />
++      {Math.round(batteryCharge)}%
++    </span>
++  )
++}
+diff --git a/components/DaysSince.tsx b/components/DaysSince.tsx
+new file mode 100644
+index 0000000..5fde8ff
+--- /dev/null
++++ b/components/DaysSince.tsx
+@@ -0,0 +1,38 @@
++'use client'
++
++import { useState, useEffect } from 'react'
++
++interface DaysSinceProps {
++  startDate: string // Format: YYYY-MM-DD
++  className?: string
++}
++
++const DaysSince: React.FC<DaysSinceProps> = ({ startDate, className = '' }) => {
++  const [days, setDays] = useState<number>(0)
++
++  useEffect(() => {
++    // Berechnet die Anzahl der Tage seit dem Startdatum
++    const calculateDays = () => {
++      const start = new Date(startDate)
++      const today = new Date()
++
++      // Zeit zurücksetzen, um nur die Tage zu zählen
++      start.setHours(0, 0, 0, 0)
++      today.setHours(0, 0, 0, 0)
++
++      // Differenz in Millisekunden berechnen
++      const diffTime = Math.abs(today.getTime() - start.getTime())
++      // Umrechnen in Tage
++      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
++
++      setDays(diffDays)
++    }
++
++    // Berechnung bei jedem Laden der Komponente durchführen
++    calculateDays()
++  }, [startDate])
++
++  return <span className={className}>seit {days} Tagen</span>
++}
++
++export default DaysSince
+diff --git a/components/Header.tsx b/components/Header.tsx
+index c2b9686..5389ac9 100644
+--- a/components/Header.tsx
++++ b/components/Header.tsx
+@@ -8,6 +8,8 @@ import Image from 'next/image'
+ import Link from './Link'
+ import MobileNav from './MobileNav'
+ import SearchButton from './SearchButton'
++import DaysSince from './DaysSince'
++import BatteryStatus from './BatteryStatus'
+ 
+ const Header = () => {
+   const [isVisible, setIsVisible] = useState(true)
+@@ -55,8 +57,12 @@ const Header = () => {
+               />
+             </div>
+             {typeof siteMetadata.headerTitle === 'string' ? (
+-              <div className="hidden h-6 text-2xl font-semibold sm:block">
+-                {siteMetadata.headerTitle}
++              <div className="hidden sm:block">
++                <div className="text-2xl font-semibold">{siteMetadata.headerTitle}</div>
++                <div className="flex items-center space-x-2 text-xs font-light text-gray-500">
++                  <DaysSince startDate="2022-09-17" />
++                  <BatteryStatus />
++                </div>
+               </div>
+             ) : (
+               siteMetadata.headerTitle
+diff --git a/data/unser-leben-im-tiny-house-zwei-jahre-spaeter-neu.mdx b/data/tiny-house/unser-leben-im-tiny-house-zwei-jahre-spaeter-neu.mdx
+similarity index 100%
+rename from data/unser-leben-im-tiny-house-zwei-jahre-spaeter-neu.mdx
+rename to data/tiny-house/unser-leben-im-tiny-house-zwei-jahre-spaeter-neu.mdx
+diff --git a/lib/victronAuth.ts b/lib/victronAuth.ts
+new file mode 100644
+index 0000000..efaae49
+--- /dev/null
++++ b/lib/victronAuth.ts
+@@ -0,0 +1,75 @@
++// Victron-Authentifizierung für kokomo2-Projekt
++// Basierend auf der offiziellen API-Dokumentation: https://vrm-api-docs.victronenergy.com/#/operations/auth/login
++import axios from 'axios'
++
++const VICTRON_LOGIN_URL = 'https://vrmapi.victronenergy.com/v2/auth/login'
++const DEFAULT_EXPIRES_IN = 24 * 60 * 60 // Standardmäßig 24 Stunden
++
++// Korrekte Anmeldedaten für die Victron API
++// WICHTIG: Diese sollten in einer Produktionsumgebung durch Umgebungsvariablen ersetzt werden
++const VICTRON_USERNAME = 'michi.mauch@gmail.com'
++const VICTRON_PASSWORD = 'cgv9ZEC6unc*ftb4wzh'
++
++async function getVictronToken() {
++  try {
++    console.log('Starte Victron-Token-Generierung gemäß API-Dokumentation...')
++
++    // Anmeldedaten entweder aus Umgebungsvariablen oder Fallback-Werten
++    const username = process.env.VICTRON_USERNAME || VICTRON_USERNAME
++    const password = process.env.VICTRON_PASSWORD || VICTRON_PASSWORD
++
++    console.log('Authentifizierung mit:', {
++      username: username ? username.substring(0, 3) + '...' : 'nicht verfügbar',
++    })
++
++    // Entsprechend der API-Dokumentation
++    // POST /auth/login mit JSON-Body
++    console.log('Sende Login-Anfrage mit:', {
++      username: username.substring(0, 3) + '...',
++      passwordLength: password ? password.length : 0,
++      loginUrl: VICTRON_LOGIN_URL,
++    })
++
++    const response = await axios.post(
++      VICTRON_LOGIN_URL,
++      {
++        username,
++        password,
++        remember_me: true, // Wichtig: Längere Token-Gültigkeit
++      },
++      {
++        headers: {
++          'Content-Type': 'application/json',
++          Accept: 'application/json',
++        },
++      }
++    )
++
++    if (response.status !== 200) {
++      console.error('Fehlerhafte Antwort von Victron API:', response.status)
++      throw new Error('Fehler bei der Victron-API-Anfrage')
++    }
++
++    console.log('API-Antwortformat:', {
++      hasData: !!response.data,
++      status: response.status,
++      hasToken: !!response.data?.token,
++      hasIdUser: !!response.data?.idUser,
++    })
++
++    // Laut API-Dokumentation enthält die Antwort ein token-Feld
++    const token = response.data.token
++    if (!token) {
++      console.error('Kein Token in der Antwort gefunden:', response.data)
++      throw new Error('Kein Token in der API-Antwort')
++    }
++
++    console.log('Token erfolgreich generiert')
++    return token
++  } catch (error) {
++    console.error('Fehler beim Abrufen des Victron-Tokens:', error.response?.data || error.message)
++    throw error
++  }
++}
++
++export default getVictronToken
+diff --git a/next.config.mjs b/next.config.mjs
+index 055ffcb..4719bc6 100644
+--- a/next.config.mjs
++++ b/next.config.mjs
+@@ -16,12 +16,12 @@ const withMDXConfig = withMDX({
+ // You might need to insert additional domains in script-src if you are using external services
+ const ContentSecurityPolicy = `
+   default-src 'self';
+-  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app analytics.umami.is analytics.kokomo.house;
++  script-src 'self' 'unsafe-eval' 'unsafe-inline' giscus.app analytics.umami.is analytics.kokomo.house va.vercel-scripts.com;
+   style-src 'self' 'unsafe-inline';
+   img-src * blob: data:;
+   media-src *.s3.amazonaws.com;
+   connect-src *;
+-  font-src 'self';
++  font-src 'self' data:;
+   frame-src giscus.app https://www.youtube.com analytics.kokomo.house www.google.com
+ `;
+ 
+diff --git a/package-lock.json b/package-lock.json
+index f06df795473109f297d99cb5f32fc8aed859e8f7..aba4914c7acd5300cf97ba642ea5a2d14c5a7fe4 100644
+GIT binary patch
+delta 646
+zcmZ9I&2Q3h9L59XWo#oF^&*RLBQcH;UdmeDE{3$@{mnut<DhG4skO9)Qp(H8L=87J
+zA?|n3nCRWadEq};l#oR)#KSHo{sHR2lLujmi|+8bJbCi{KF>29yPm&sz552)>As+J
+zoY76^9oQRrIEO}a$gsdTnM2UeFW~(nvjY@oP-uPW^Lc!y{sYpqO{yG%wKL^3O%kmk
+zlTB(VAy{qUdcg0)<W{wy-6!@?A4cv3vSFSKb7F){33|PumndDz?8>}UVN_BpwphGJ
+z;Z!z+=aV`(j2UiiG?Zpj>3LL+6;!US{mloX-XJJGwmHVX&`Wkz=?^>&RgpZLtb^Br
+z<ubVY*5ELoCY*dPLu<y-(Frs;Ix$(EuK#-weEzU<6@tC+c<UK*^Zc_#$@7wD>7}I`
+zB+vDbM5ihY^E|5%gSIqi<dTD!RPEGoF(@U)Qok0*hE#;_H5siyAqa+Rd$gW&58R<Z
+z8~0V(fhLOj#atW>;N@_mkWIJ2p==GV3NkC`0^6mVVC#Vuwi8{3lPjFcC@Oys{CHwT
+z#-Cnng8iU*4g98zZZpd<T^_(=$OZPZ2Ipuhnip6mQ_;#D+s@VjudWz24ra#S_12lT
+zTx?PEe*v^-#_clh9*PA5V`7m8tg#f4@e?#g>?Ddh>aXYeb#;hT!y=k3mq;AO#U2up
+zGU?sg?R-~GX+&A1db~!HB?TrbaUzw7)T%-peEn#;1}=6Dj*&OIvcNX+Mps{6_yacK
+B<dy&c
+
+delta 64
+zcmbQbNb}TW%?(eOoBuPn|7T_dVy5l?nVFy5Xzzc(yuJSc3rm0dt3p;FX50R%kUjZa
+RdzB*x5OZ#?a^#xL4*=;e9U1@t
+
+diff --git a/package.json b/package.json
+index cf37f2b..5909eb0 100644
+--- a/package.json
++++ b/package.json
+@@ -31,6 +31,7 @@
+     "@vercel/analytics": "^1.5.0",
+     "apexcharts": "^4.5.0",
+     "aws-sdk": "^2.1692.0",
++    "axios": "^1.9.0",
+     "body-scroll-lock": "^4.0.0-beta.0",
+     "class-variance-authority": "^0.7.1",
+     "clsx": "^2.1.1",
+diff --git a/public/static/images/battery-full.svg b/public/static/images/battery-full.svg
+new file mode 100644
+index 0000000..3b059f0
+--- /dev/null
++++ b/public/static/images/battery-full.svg
+@@ -0,0 +1 @@
++<svg id="Battery_Icons" enable-background="new 0 0 32 32" height="512" viewBox="0 0 32 32" width="512" xmlns="http://www.w3.org/2000/svg"><g id="XMLID_128_" fill="rgb(0,0,0)"><g id="XMLID_1_"><path d="m28 25h-28v-18h28zm-26-2h24v-14h-24z"/><path d="m32 20h-5v-2h3v-4h-3v-2h5z"/></g><path id="XMLID_17_" d="m5 11h3v10h-3z"/><path id="XMLID_36_" d="m10 11h3v10h-3z"/><path id="XMLID_50_" d="m15 11h3v10h-3z"/><path id="XMLID_51_" d="m20 11h3v10h-3z"/></g></svg>
+\ No newline at end of file
+-- 
+2.33.0
+

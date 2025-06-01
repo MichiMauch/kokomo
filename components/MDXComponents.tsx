@@ -4,11 +4,12 @@ import * as React from 'react'
 import TOCInline from 'pliny/ui/TOCInline'
 import Pre from 'pliny/ui/Pre'
 import BlogNewsletterForm from 'pliny/ui/BlogNewsletterForm'
-import type { MDXComponents } from 'mdx/types'
+import type { MDXComponents as MDXComponentsType } from 'mdx/types'
 import Image from 'next/image'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
 import { Galerie as GalerieComponent } from './MDXGallery'
+import YouTubeEmbed from './YouTubeEmbed'
 
 // Erweiterte ImageProps für unsere CustomImage Komponente
 interface CustomImageProps {
@@ -77,6 +78,7 @@ const CustomImage = ({ src, alt, width, height, className, ...props }: CustomIma
 const groupConsecutiveImages = (children: React.ReactNode[]): React.ReactNode[] => {
   const groups: React.ReactNode[] = []
   let currentGroup: React.ReactElement<CustomImageProps>[] = []
+  let inMarkdownImagesBlock = false // Flag, um zu verfolgen, ob wir in einem Block von Markdown-Bildern sind
 
   const pushGroup = () => {
     if (currentGroup.length > 1) {
@@ -98,16 +100,50 @@ const groupConsecutiveImages = (children: React.ReactNode[]): React.ReactNode[] 
       groups.push(currentGroup[0])
     }
     currentGroup = []
+    inMarkdownImagesBlock = false
   }
 
   React.Children.forEach(children, (child) => {
     if (React.isValidElement(child)) {
       const props = child.props as MDXProps
 
-      if (child.type === CustomImage || isImageProps(props)) {
+      // Prüfe auf p-Tags mit einem einzelnen String-Kind (MDX Markdown Bilder)
+      if (
+        child.type === 'p' &&
+        props.children &&
+        typeof props.children === 'string' &&
+        props.children.trim().startsWith('![') &&
+        props.children.includes('({IMAGE_PATH}')
+      ) {
+        // Hier haben wir ein Markdown-Bild in einem p-Tag als String
+        console.log('Found Markdown image string:', props.children) // Debug log
+
+        // Extrahiere die URL aus dem Markdown-Format ![alt]({IMAGE_PATH}/path.webp)
+        const altMatch = props.children.match(/!\[(.*?)\]/)
+        const urlMatch = props.children.match(/\(\{IMAGE_PATH\}\/([^)]+)\)/)
+
+        if (urlMatch) {
+          const imgSrc = `{IMAGE_PATH}/${urlMatch[1]}`
+          const imgAlt = altMatch ? altMatch[1] : 'Image'
+
+          const imgElement = React.createElement(CustomImage, {
+            src: imgSrc,
+            alt: imgAlt,
+            key: `markdown-img-${imgSrc}`,
+          }) as React.ReactElement<CustomImageProps>
+
+          currentGroup.push(imgElement)
+          inMarkdownImagesBlock = true
+        }
+      }
+      // Erkenne direkte Bilder und füge sie zur aktuellen Gruppe hinzu
+      else if (child.type === CustomImage || isImageProps(props)) {
         console.log('Found image:', props.src) // Debug log
         currentGroup.push(child as React.ReactElement<CustomImageProps>)
-      } else if (
+        inMarkdownImagesBlock = true
+      }
+      // Erkenne Bilder, die in p-Tags eingebettet sind
+      else if (
         child.type === 'p' &&
         props.children &&
         React.Children.toArray(props.children).some(
@@ -124,14 +160,23 @@ const groupConsecutiveImages = (children: React.ReactNode[]): React.ReactNode[] 
               (isMDXProps(grandChild.props) && isImageProps(grandChild.props)))
           ) {
             currentGroup.push(grandChild as React.ReactElement<CustomImageProps>)
+            inMarkdownImagesBlock = true
           }
         })
-      } else {
-        pushGroup()
+      }
+      // Bei anderen Elementen, die nicht Teil einer Bildgruppe sind, schließe die aktuelle Gruppe ab
+      else {
+        if (inMarkdownImagesBlock) {
+          // Nur wenn wir vorher in einem Bildblock waren und jetzt auf etwas anderes stoßen
+          pushGroup()
+        }
         groups.push(child)
       }
     } else {
-      pushGroup()
+      // Bei Nicht-React-Elementen (wie Text) immer die Gruppe abschließen
+      if (inMarkdownImagesBlock) {
+        pushGroup()
+      }
       if (child !== null && child !== undefined) {
         groups.push(child)
       }
@@ -145,11 +190,16 @@ const groupConsecutiveImages = (children: React.ReactNode[]): React.ReactNode[] 
 // MDX Wrapper Component
 const MDXWrapper = ({ children }: { children: React.ReactNode }) => {
   console.log('MDXWrapper received children count:', React.Children.count(children)) // Debug log
+
+  // Wir konvertieren alle Kinder zu einem Array und filtern leere String-Elemente heraus
   const flatChildren = React.Children.toArray(children).filter(
     (child) => child !== null && (typeof child !== 'string' || child.trim() !== '')
   )
+
+  // Gruppiere aufeinanderfolgende Bilder in eine einzige Galerie
   const processed = groupConsecutiveImages(flatChildren)
   console.log('Processed children count:', processed.length) // Debug log
+
   return <>{processed}</>
 }
 
@@ -202,7 +252,7 @@ const MDXGalerie = (props: { images: GalleryImage[] }) => {
 }
 
 // MDX Components mit korrekter Typisierung
-const mdxComponents = {
+const mdxComponents: MDXComponentsType = {
   Image: CustomImage,
   img: CustomImage,
   Galerie: MDXGalerie,
@@ -212,7 +262,9 @@ const mdxComponents = {
   a: CustomLink,
   table: TableWrapper,
   BlogNewsletterForm,
-} as MDXComponents
+  YouTube: YouTubeEmbed,
+  YouTubeEmbed: YouTubeEmbed, // Registrierung unter beiden Namen
+}
 
-export { mdxComponents as components, GalerieComponent as Galerie }
+export { mdxComponents as components, GalerieComponent as Galerie, YouTubeEmbed }
 export default mdxComponents
