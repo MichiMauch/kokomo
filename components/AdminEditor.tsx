@@ -75,7 +75,10 @@ const AdminEditor = () => {
     if (!imageFile) return toast.error('Bitte ein Bild auswählen')
     setUploadingTitleImage(true)
     try {
-      const webpBlob = await convertImageToWebP(imageFile)
+      // Titelbild im Verhältnis 1024:528 (ca. 1.94:1) zuschneiden und auf max. 1000px Breite begrenzen
+      const TITLE_IMAGE_RATIO = 1024 / 528
+      const MAX_WIDTH = 1000
+      const webpBlob = await convertImageToWebP(imageFile, TITLE_IMAGE_RATIO, MAX_WIDTH)
       const slug = title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -106,7 +109,9 @@ const AdminEditor = () => {
     if (!markdownImageFile) return toast.error('Bitte ein Bild auswählen')
     setUploadingMarkdownImage(true)
     try {
-      const webpBlob = await convertImageToWebP(markdownImageFile)
+      // Markdown-Bilder auf max. 1000px Breite begrenzen, aber kein festes Seitenverhältnis erzwingen
+      const MAX_WIDTH = 1000
+      const webpBlob = await convertImageToWebP(markdownImageFile, undefined, MAX_WIDTH)
       const originalName = markdownImageFile.name
       const webpName = originalName.endsWith('.webp')
         ? originalName
