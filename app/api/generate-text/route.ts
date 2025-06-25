@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Fehler bei der Text-Generierung:', error)
-    return NextResponse.json({ error: 'Fehler bei der Text-Generierung' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Fehler bei der Text-Generierung'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

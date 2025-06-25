@@ -96,7 +96,9 @@ export default function AgentPage() {
       })
 
       if (!res.ok) {
-        throw new Error(`Fehler beim Abrufen der Daten: ${res.statusText}`)
+        const errData = await res.json().catch(() => null)
+        const message = errData?.error || res.statusText
+        throw new Error(`Fehler beim Abrufen der Daten: ${message}`)
       }
 
       const data = await res.json()
