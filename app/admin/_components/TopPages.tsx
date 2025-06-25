@@ -30,13 +30,8 @@ export default function TopPages() {
   }, [range])
 
   return (
-    <Card
-      className="bg-white text-gray-700 shadow-md"
-      placeholder=""
-      onPointerEnterCapture={() => {}}
-      onPointerLeaveCapture={() => {}}
-    >
-      <CardBody placeholder="" onPointerEnterCapture={() => {}} onPointerLeaveCapture={() => {}}>
+    <Card className="bg-white text-gray-700 shadow-md" placeholder="">
+      <CardBody placeholder="">
         <div className="mb-6 flex items-center gap-4">
           <div className="bg-primary-500 rounded-lg p-3 text-white">
             <ListBulletIcon className="h-6 w-6" />
@@ -46,8 +41,6 @@ export default function TopPages() {
               variant="h6"
               color="blue-gray"
               placeholder=""
-              onPointerEnterCapture={() => {}}
-              onPointerLeaveCapture={() => {}}
             >
               Meistbesuchte Seiten
             </Typography>
@@ -55,8 +48,6 @@ export default function TopPages() {
               variant="small"
               className="text-gray-700"
               placeholder=""
-              onPointerEnterCapture={() => {}}
-              onPointerLeaveCapture={() => {}}
             >
               {range === 'day' ? 'Heute' : range === 'last7' ? 'Letzte 7 Tage' : 'Letzte 28 Tage'}
             </Typography>
