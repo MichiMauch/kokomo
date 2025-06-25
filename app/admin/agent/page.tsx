@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
+import { Textarea } from '@/components/ui/textarea'
 
 export const dynamic = 'force-dynamic'
 
@@ -142,22 +143,48 @@ export default function AgentPage() {
 
       {plan && (
         <div className="space-y-4 rounded border bg-white p-4 shadow">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">Strategie</h2>
-            <p className="mb-4 text-sm text-gray-600">
-              <strong>Ziel:</strong> {plan.ziel}
-              <br />
-              <strong>Zielgruppe:</strong> {plan.zielgruppe}
-            </p>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-gray-800">Strategie bearbeiten</h2>
             <div>
-              <p className="mb-1 font-medium text-gray-700">🔹 Gliederung:</p>
-              <ul className="list-disc space-y-1 pl-5 text-sm text-gray-800">
-                {Array.isArray(plan.gliederung) ? (
-                  plan.gliederung.map((point, i) => <li key={i}>{point}</li>)
-                ) : (
-                  <li>Keine Gliederung verfügbar</li>
-                )}
-              </ul>
+              <label htmlFor="ziel" className="mb-1 block text-sm font-medium text-gray-700">
+                Ziel
+              </label>
+              <Textarea
+                id="ziel"
+                value={plan.ziel}
+                onChange={(e) => setPlan({ ...plan, ziel: e.target.value })}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="zielgruppe" className="mb-1 block text-sm font-medium text-gray-700">
+                Zielgruppe
+              </label>
+              <Textarea
+                id="zielgruppe"
+                value={plan.zielgruppe}
+                onChange={(e) => setPlan({ ...plan, zielgruppe: e.target.value })}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="gliederung" className="mb-1 block text-sm font-medium text-gray-700">
+                Gliederung (eine Zeile pro Punkt)
+              </label>
+              <Textarea
+                id="gliederung"
+                value={plan.gliederung.join('\n')}
+                onChange={(e) =>
+                  setPlan({
+                    ...plan,
+                    gliederung: e.target.value
+                      .split('\n')
+                      .map((line) => line.trim())
+                      .filter(Boolean),
+                  })
+                }
+                className="w-full"
+              />
             </div>
           </div>
 
