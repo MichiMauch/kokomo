@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,6 +112,9 @@ export default function AgentPage() {
       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
     } catch (err) {
       console.error('❌ Fehler beim Text generieren:', err)
+      toast.error('Fehler beim Text generieren', {
+        description: typeof err === 'string' ? err : (err as Error).message,
+      })
     } finally {
       setGenerating(false)
     }
