@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useMdxDraft } from '@/components/context/mdx-draft-context'
 import SpinnerModal from '../_components/SpinnerModal'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,7 +96,9 @@ export default function AgentPage() {
       })
 
       if (!res.ok) {
-        throw new Error(`Fehler beim Abrufen der Daten: ${res.statusText}`)
+        const errData = await res.json().catch(() => null)
+        const message = errData?.error || res.statusText
+        throw new Error(`Fehler beim Abrufen der Daten: ${message}`)
       }
 
       const data = await res.json()
@@ -111,6 +114,9 @@ export default function AgentPage() {
       router.push(`/admin/create?title=${encodeURIComponent(title)}`)
     } catch (err) {
       console.error('❌ Fehler beim Text generieren:', err)
+      toast.error('Fehler beim Text generieren', {
+        description: typeof err === 'string' ? err : (err as Error).message,
+      })
     } finally {
       setGenerating(false)
     }
