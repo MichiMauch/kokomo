@@ -1,0 +1,22 @@
+# KOKOMO House
+
+> KOKOMO House ist ein Blog, der sich dem Leben in einem Tiny House widmet. Die Betreiber, Sibylle und Michi, teilen ihre Erfahrungen und Tipps für ein minimalistisches Leben auf 36m². Der Blog fördert nachhaltige Lebensweisen und kreative Lösungen für Wohnräume.
+
+## Main
+- [Startseite](https://www.kokomo.house): Hier finden Nutzer eine Einführung in das Leben im Tiny House, persönliche Geschichten und praktische Tipps zur Einrichtung und Nutzung von kleinen Wohnräumen.
+- [Über uns](https://www.kokomo.house/ueber-uns): Informationen über die Betreiber Sibylle und Michi, ihre Hintergründe und ihre Motivation, im Tiny House zu leben. 
+- [Blog](https://www.kokomo.house): Eine Sammlung von Artikeln über verschiedene Aspekte des Tiny House Lebens, einschließlich Einrichtung, Nachhaltigkeit und persönliche Erlebnisse.
+
+## Publikationen & News
+- [Aktuelle Inhalte](https://www.kokomo.house): Regelmäßige Updates und neue Artikel über das Leben im Tiny House, die sich mit aktuellen Themen und Herausforderungen befassen.
+- [Fachpublikationen](https://www.kokomo.house): Artikel, die sich mit spezifischen Themen wie nachhaltigem Wohnen, DIY-Projekten und minimalistischen Lebensstilen beschäftigen.
+
+## Kontakt & Informationen
+- [Kontakt & Standorte](https://www.kokomo.house): Informationen zu Kontaktmöglichkeiten und wie Nutzer die Betreiber erreichen können.
+- [Services & Preise](https://www.kokomo.house): Übersicht über mögliche Dienstleistungen, die im Zusammenhang mit dem Tiny House Leben angeboten werden (z.B. Workshops oder Beratungen).
+- [FAQ & Support](https://www.kokomo.house): Antworten auf häufige Fragen und Unterstützung für Leser, die mehr über das Tiny House Leben erfahren möchten.
+
+## Wichtige Hinweise
+- KOKOMO House ist ein persönlicher Blog, der von einem Paar betrieben wird, das in einem Tiny House lebt.
+- Die Zielgruppe umfasst Menschen, die an minimalistischem Leben, Tiny Houses und nachhaltigen Lebensweisen interessiert sind.
+- Besonderheiten des Blogs sind die praktischen Tipps und die persönliche Perspektive der Betreiber, die ihre Erfahrungen und Herausforderungen teilen.
