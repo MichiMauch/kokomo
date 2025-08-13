@@ -131,7 +131,7 @@ export const Blog = defineDocumentType(() => ({
             : doc.images[0]
           : siteMetadata.socialBanner,
         url: `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
-        keywords: doc.tags ? doc.tags.join(', ') : undefined,
+        keywords: doc.tags && Array.isArray(doc.tags) ? doc.tags.join(', ') : undefined,
         articleBody: doc.body.raw.substring(0, 500) + '...', // Erste 500 Zeichen des Artikels
         wordCount: doc.body.raw.split(/\s+/).length,
         inLanguage: 'de-CH',
