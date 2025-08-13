@@ -125,8 +125,37 @@ export const Blog = defineDocumentType(() => ({
         datePublished: doc.date,
         dateModified: doc.lastmod || doc.date,
         description: doc.summary,
-        image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+        image: doc.images
+          ? typeof doc.images === 'string'
+            ? doc.images
+            : doc.images[0]
+          : siteMetadata.socialBanner,
         url: `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
+        keywords: doc.tags ? doc.tags.join(', ') : undefined,
+        articleBody: doc.body.raw.substring(0, 500) + '...', // Erste 500 Zeichen des Artikels
+        wordCount: doc.body.raw.split(/\s+/).length,
+        inLanguage: 'de-CH',
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'KOKOMO House',
+          logo: {
+            '@type': 'ImageObject',
+            url: `${siteMetadata.siteUrl}/static/images/kokomo-bildmarke.svg`,
+            width: 60,
+            height: 60,
+          },
+          url: siteMetadata.siteUrl,
+          sameAs: [
+            'https://www.instagram.com/kokomo.house',
+            'https://www.facebook.com/groups/tinyhousecommunityschweiz',
+            'https://www.linkedin.com/in/michimauch/',
+          ],
+        },
+        // Author wird in page.tsx hinzugefügt
       }),
     },
   },

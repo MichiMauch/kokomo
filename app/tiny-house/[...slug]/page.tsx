@@ -100,6 +100,19 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
     return {
       '@type': 'Person',
       name: author.name,
+      url: author.twitter
+        ? `https://twitter.com/${author.twitter}`
+        : author.linkedin
+          ? author.linkedin
+          : author.instagram
+            ? `https://instagram.com/${author.instagram}`
+            : undefined,
+      sameAs: [
+        author.twitter && `https://twitter.com/${author.twitter}`,
+        author.linkedin && author.linkedin,
+        author.instagram && `https://instagram.com/${author.instagram}`,
+        author.facebook && author.facebook,
+      ].filter(Boolean),
     }
   })
 
