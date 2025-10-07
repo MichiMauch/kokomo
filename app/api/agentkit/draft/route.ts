@@ -12,6 +12,7 @@ import {
   getDraftPath,
   readMdxFile,
   getFirstParagraph,
+  findSimilarPosts,
 } from '@/lib/agentkit-utils'
 
 // Force Node.js runtime for file system operations
@@ -30,28 +31,52 @@ const openai = new OpenAI({
  */
 const checkDraftTool = tool({
   name: 'check_post',
-  description: 'Check if a blog post MDX file exists for a given topic in data/tiny-house/',
+  description:
+    'Check if a blog post MDX file exists for a given topic in data/tiny-house/. Returns exact matches and similar posts.',
   parameters: z.object({
     topic: z.string().describe('The topic to check for'),
   }),
   execute: async ({ topic }: { topic: string }) => {
     const slug = slugify(topic)
-    const exists = draftExists(slug, POSTS_DIR)
 
-    if (exists) {
+    // Check for exact match first
+    const exactMatch = draftExists(slug, POSTS_DIR)
+
+    if (exactMatch) {
       const filePath = getDraftPath(slug, POSTS_DIR)
       return {
-        exists: true,
+        exactMatch: true,
         slug,
         path: filePath,
-        message: `Post exists at: ${filePath}`,
+        similarPosts: [],
+        message: `Exact match found at: ${filePath}`,
+      }
+    }
+
+    // Find similar posts using fuzzy matching
+    const similarPosts = findSimilarPosts(slug, POSTS_DIR, 0.6)
+
+    if (similarPosts.length > 0) {
+      const topMatches = similarPosts.slice(0, 5).map((post) => ({
+        filename: post.filename,
+        slug: post.slug,
+        similarity: Math.round(post.similarity * 100),
+        path: post.path,
+      }))
+
+      return {
+        exactMatch: false,
+        slug,
+        similarPosts: topMatches,
+        message: `No exact match found for "${topic}", but ${similarPosts.length} similar post(s) found. Top matches: ${topMatches.map((p) => `${p.filename} (${p.similarity}% similar)`).join(', ')}`,
       }
     }
 
     return {
-      exists: false,
+      exactMatch: false,
       slug,
-      message: `No post found for topic "${topic}"`,
+      similarPosts: [],
+      message: `No posts found for topic "${topic}" (no exact or similar matches)`,
     }
   },
 })
@@ -215,10 +240,17 @@ export async function POST(req: Request) {
 
 Your tasks:
 1. Check if a blog post exists for the given topic in data/tiny-house/
-2. If it exists, provide a summary with frontmatter details
-3. If it doesn't exist, create a new draft post with draft: true in data/tiny-house/
+2. If an EXACT match exists, provide a summary with frontmatter details
+3. If SIMILAR posts exist (similarity >= 60%), inform the user about them and ask if they want to:
+   - Use one of the existing similar posts instead
+   - Create a new draft anyway (only if the topic is truly different)
+4. If NO posts exist (no exact or similar matches), create a new draft post with draft: true in data/tiny-house/
 
-Important: New posts are created directly in data/tiny-house/ (not in a drafts subfolder) with draft: true in frontmatter.
+IMPORTANT RULES:
+- Do NOT create a new draft if similar posts exist (>= 60% similarity) without first informing the user
+- When similar posts are found, list them with their similarity scores and suggest the user review them
+- Only create new drafts when there are truly no related posts, or when the user explicitly confirms despite similar posts existing
+- New posts are created directly in data/tiny-house/ (not in a drafts subfolder) with draft: true in frontmatter
 
 Always be helpful and provide clear feedback about what you did.`,
       model: 'gpt-4',
