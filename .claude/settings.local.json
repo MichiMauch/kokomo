@@ -8,7 +8,11 @@
       "Bash(mv:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)",
+      "Bash(NODE_OPTIONS='--experimental-json-modules' npm run build)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

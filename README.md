@@ -330,6 +330,115 @@ Consider removing the following features that cannot be used in a static build:
 - [How can I customize the `kbar` search?](/faq/customize-kbar-search.md)
 - [Deploy with docker](/faq/deploy-with-docker.md)
 
+---
+
+## 🤖 AgentKit Integration
+
+This project includes an AI-powered draft management system using OpenAI's AgentKit.
+
+### Features
+
+- **AI-Powered Draft Creation**: Automatically create MDX draft files with proper frontmatter
+- **Draft Discovery**: Check if drafts exist for specific topics
+- **Draft Summarization**: Get previews and metadata from existing drafts
+- **Safe Operations**: Non-destructive file operations with built-in checks
+
+### Setup
+
+1. **Install Dependencies** (already included in package.json):
+
+   ```bash
+   npm install
+   ```
+
+2. **Configure Environment Variables**:
+   Copy `.env.example` to `.env.local` and add your OpenAI API key:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Edit `.env.local` and add:
+
+   ```
+   OPENAI_API_KEY=sk-proj-your_openai_api_key
+   ```
+
+3. **Optional: Disable AgentKit**:
+   To disable the AgentKit functionality, add to `.env.local`:
+   ```
+   AGENTKIT_ENABLED=false
+   ```
+
+### Usage
+
+1. **Start the Development Server**:
+
+   ```bash
+   npm run dev
+   ```
+
+2. **Access the Admin Interface**:
+   Navigate to `http://localhost:3000/admin/agentkit-drafts`
+
+3. **Create or Find Drafts**:
+   - Enter a topic (e.g., "Regenwasser im Tiny House")
+   - Optionally add a summary
+   - Click "Draft erstellen/finden"
+   - The AI agent will check if a draft exists, summarize it if found, or create a new one
+
+### API Endpoint
+
+**POST** `/api/agentkit/draft`
+
+Request body:
+
+```json
+{
+  "topic": "Your topic here",
+  "summary": "Optional summary"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "agent_output": "Agent's response...",
+  "trace_id": "trace-id-if-available"
+}
+```
+
+### Draft Location
+
+Drafts are stored in: `data/tiny-house/drafts/`
+
+Each draft includes:
+
+- Frontmatter with: `title`, `date`, `tags`, `authors`, `summary`, `draft: true`, `images`, `type`
+- Default author: "Michi"
+- Slugified filename based on topic
+
+### Architecture
+
+- **API Route**: `app/api/agentkit/draft/route.ts` - Main agent handler
+- **Utilities**: `lib/agentkit-utils.ts` - File operations and helpers
+- **Admin UI**: `app/admin/agentkit-drafts/page.tsx` - User interface
+- **Agent Tools**:
+  - `check_draft`: Verify draft existence
+  - `summarize_draft`: Read and preview drafts
+  - `create_draft`: Generate new draft files
+
+### Security Notes
+
+- Uses Node.js runtime for file system operations
+- No destructive operations on existing content
+- Drafts are created only in designated directory
+- Optional feature flag for enabling/disabling
+
+---
+
 ## Support
 
 Using the template? Support this effort by giving a star on GitHub, sharing your own blog and giving a shoutout on Twitter or becoming a project [sponsor](https://github.com/sponsors/timlrx).
