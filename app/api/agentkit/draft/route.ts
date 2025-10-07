@@ -3,6 +3,7 @@ import { Agent, tool, run } from '@openai/agents'
 import { z } from 'zod'
 import fs from 'fs'
 import path from 'path'
+import OpenAI from 'openai'
 import {
   slugify,
   ensureDir,
@@ -18,6 +19,11 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const DRAFTS_DIR = path.join(process.cwd(), 'data/tiny-house/drafts')
+
+// Initialize OpenAI client for content generation
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 /**
  * Tool: Check if a draft exists for a given topic
@@ -80,11 +86,12 @@ const summarizeDraftTool = tool({
 })
 
 /**
- * Tool: Create a new draft MDX file
+ * Tool: Create a new draft MDX file with AI-generated content
  */
 const createDraftTool = tool({
   name: 'create_draft',
-  description: 'Create a new draft MDX file with frontmatter',
+  description:
+    'Create a new draft MDX file with AI-generated blog post content about Tiny House living',
   parameters: z.object({
     topic: z.string().describe('The topic/title of the draft'),
     summary: z.string().nullable().optional().describe('Optional summary of the draft'),
@@ -114,32 +121,61 @@ const createDraftTool = tool({
     // Ensure drafts directory exists
     ensureDir(DRAFTS_DIR)
 
-    // Generate frontmatter and content
-    const frontmatter = generateFrontmatter({
-      title: topic,
-      summary: summary || '',
-      tags: tags || [],
-      authors: ['Michi'],
-    })
+    try {
+      // Generate blog post content with GPT-4
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `Du bist ein erfahrener Tiny-House-Blogger, der für das KOKOMO Tiny House Blog schreibt.
+Du schreibst authentische, persönliche Blogposts aus der Ich-Perspektive (wir/unser Tiny House).
+Der Blog dokumentiert das Leben in einem autarken Tiny House (Wohnwagon) in der Schweiz.
 
-    const content = `${frontmatter}
-# ${topic}
+Schreibe einen vollständigen, strukturierten Blogpost mit:
+- Einer einleitenden persönlichen Anekdote oder Erfahrung
+- 3-5 Hauptabschnitten mit aussagekräftigen Zwischenüberschriften (##)
+- Praktischen Tipps und konkreten Erfahrungen
+- Einer persönlichen Zusammenfassung am Ende
+- Nutze eine freundliche, nahbare Sprache
+- Verwende "wir" statt "ich"
+- Integriere konkrete Zahlen und Details wo passend
+- Formatierung: Markdown, keine HTML-Tags`,
+          },
+          {
+            role: 'user',
+            content: `Schreibe einen Blogpost zum Thema: "${topic}"${summary ? `\n\nKurzbeschreibung: ${summary}` : ''}
 
-${summary || 'Fügen Sie hier den Inhalt Ihres Blogposts hinzu...'}
+Der Post sollte ca. 800-1200 Wörter haben und unsere praktischen Erfahrungen im KOKOMO Tiny House widerspiegeln.`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2500,
+      })
 
-## Weitere Abschnitte
+      const generatedContent = completion.choices[0]?.message?.content || ''
 
-Hier können Sie weitere Inhalte ergänzen.
+      // Generate frontmatter
+      const frontmatter = generateFrontmatter({
+        title: topic,
+        summary: summary || '',
+        tags: tags || [],
+        authors: ['Michi'],
+      })
+
+      const content = `${frontmatter}
+${generatedContent}
 `
 
-    // Write file
-    try {
+      // Write file
       fs.writeFileSync(filePath, content, 'utf-8')
+
       return {
         success: true,
-        message: `Draft created successfully at: ${filePath}`,
+        message: `Draft with AI-generated content created successfully at: ${filePath}`,
         path: filePath,
         slug,
+        wordCount: generatedContent.split(/\s+/).length,
       }
     } catch (error) {
       return {
