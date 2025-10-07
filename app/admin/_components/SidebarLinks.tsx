@@ -51,6 +51,7 @@ export function SidebarLinks() {
     { href: '/admin/', label: '📉 Dashboard' },
     { href: '/admin/create', label: '✍️ Neuer Post' },
     { href: '/admin/posts', label: '📄 Alle Beiträge' },
+    { href: '/admin/agentkit-drafts', label: '🤖 AgentKit Drafts' },
     {
       key: 'prompt-generator',
       label: '🖼️ Bild-Prompt Generator',
