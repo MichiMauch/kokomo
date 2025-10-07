@@ -81,54 +81,17 @@ export function getDraftPath(slug: string, draftsDir: string): string {
 }
 
 /**
- * Calculate Levenshtein distance between two strings
+ * List all blog posts in the posts directory with their metadata
  */
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = []
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i]
-  }
-
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1]
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j] + 1 // deletion
-        )
-      }
-    }
-  }
-
-  return matrix[str2.length][str1.length]
-}
-
-/**
- * Calculate similarity score between two strings (0-1, higher is more similar)
- */
-function calculateSimilarity(str1: string, str2: string): number {
-  const maxLength = Math.max(str1.length, str2.length)
-  if (maxLength === 0) return 1.0
-  const distance = levenshteinDistance(str1, str2)
-  return 1 - distance / maxLength
-}
-
-/**
- * Find similar posts in the posts directory
- */
-export function findSimilarPosts(
-  searchSlug: string,
-  postsDir: string,
-  similarityThreshold: number = 0.6
-): Array<{ slug: string; filename: string; similarity: number; path: string }> {
+export function listAllPosts(postsDir: string): Array<{
+  filename: string
+  slug: string
+  title: string
+  summary: string
+  tags: string[]
+  draft: boolean
+  path: string
+}> {
   if (!fs.existsSync(postsDir)) {
     return []
   }
@@ -137,26 +100,34 @@ export function findSimilarPosts(
     .readdirSync(postsDir)
     .filter((file) => file.endsWith('.mdx'))
     .map((filename) => {
+      const filePath = path.join(postsDir, filename)
       const fileSlug = filename.replace('.mdx', '')
 
-      // Check if search slug is contained in the filename
-      const containsMatch = fileSlug.includes(searchSlug) || searchSlug.includes(fileSlug)
+      try {
+        const { frontmatter } = readMdxFile(filePath)
 
-      // Calculate similarity score
-      const similarity = calculateSimilarity(searchSlug, fileSlug)
-
-      // Boost similarity if one contains the other
-      const finalSimilarity = containsMatch ? Math.max(similarity, 0.75) : similarity
-
-      return {
-        slug: fileSlug,
-        filename,
-        similarity: finalSimilarity,
-        path: path.join(postsDir, filename),
+        return {
+          filename,
+          slug: fileSlug,
+          title: (frontmatter.title as string) || '',
+          summary: (frontmatter.summary as string) || '',
+          tags: (frontmatter.tags as string[]) || [],
+          draft: (frontmatter.draft as boolean) || false,
+          path: filePath,
+        }
+      } catch {
+        // If frontmatter reading fails, return basic info
+        return {
+          filename,
+          slug: fileSlug,
+          title: fileSlug,
+          summary: '',
+          tags: [],
+          draft: false,
+          path: filePath,
+        }
       }
     })
-    .filter((file) => file.similarity >= similarityThreshold)
-    .sort((a, b) => b.similarity - a.similarity)
 
   return files
 }

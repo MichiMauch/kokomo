@@ -13,7 +13,8 @@
       "Bash(npm install:*)",
       "Bash(NODE_OPTIONS='--experimental-json-modules' npm run build)",
       "Bash(cat:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

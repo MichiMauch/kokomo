@@ -12,7 +12,7 @@ import {
   getDraftPath,
   readMdxFile,
   getFirstParagraph,
-  findSimilarPosts,
+  listAllPosts,
 } from '@/lib/agentkit-utils'
 
 // Force Node.js runtime for file system operations
@@ -27,56 +27,27 @@ const openai = new OpenAI({
 })
 
 /**
- * Tool: Check if a post exists for a given topic in data/tiny-house/
+ * Tool: List all blog posts in data/tiny-house/
  */
-const checkDraftTool = tool({
-  name: 'check_post',
+const listPostsTool = tool({
+  name: 'list_all_posts',
   description:
-    'Check if a blog post MDX file exists for a given topic in data/tiny-house/. Returns exact matches and similar posts.',
-  parameters: z.object({
-    topic: z.string().describe('The topic to check for'),
-  }),
-  execute: async ({ topic }: { topic: string }) => {
-    const slug = slugify(topic)
-
-    // Check for exact match first
-    const exactMatch = draftExists(slug, POSTS_DIR)
-
-    if (exactMatch) {
-      const filePath = getDraftPath(slug, POSTS_DIR)
-      return {
-        exactMatch: true,
-        slug,
-        path: filePath,
-        similarPosts: [],
-        message: `Exact match found at: ${filePath}`,
-      }
-    }
-
-    // Find similar posts using fuzzy matching
-    const similarPosts = findSimilarPosts(slug, POSTS_DIR, 0.6)
-
-    if (similarPosts.length > 0) {
-      const topMatches = similarPosts.slice(0, 5).map((post) => ({
-        filename: post.filename,
-        slug: post.slug,
-        similarity: Math.round(post.similarity * 100),
-        path: post.path,
-      }))
-
-      return {
-        exactMatch: false,
-        slug,
-        similarPosts: topMatches,
-        message: `No exact match found for "${topic}", but ${similarPosts.length} similar post(s) found. Top matches: ${topMatches.map((p) => `${p.filename} (${p.similarity}% similar)`).join(', ')}`,
-      }
-    }
+    'List all blog posts in data/tiny-house/ with their titles, summaries, tags, and draft status. Use this to find existing posts related to a topic.',
+  parameters: z.object({}),
+  execute: async () => {
+    const posts = listAllPosts(POSTS_DIR)
 
     return {
-      exactMatch: false,
-      slug,
-      similarPosts: [],
-      message: `No posts found for topic "${topic}" (no exact or similar matches)`,
+      total: posts.length,
+      posts: posts.map((post) => ({
+        filename: post.filename,
+        title: post.title,
+        summary: post.summary,
+        tags: post.tags,
+        draft: post.draft,
+        path: post.path,
+      })),
+      message: `Found ${posts.length} blog posts in data/tiny-house/`,
     }
   },
 })
@@ -238,29 +209,40 @@ export async function POST(req: Request) {
       name: 'blog-post-agent',
       instructions: `You are a helpful assistant that manages blog posts for the KOKOMO Tiny House blog.
 
-Your tasks:
-1. Check if a blog post exists for the given topic in data/tiny-house/
-2. If an EXACT match exists, provide a summary with frontmatter details
-3. If SIMILAR posts exist (similarity >= 60%), inform the user about them and ask if they want to:
-   - Use one of the existing similar posts instead
-   - Create a new draft anyway (only if the topic is truly different)
-4. If NO posts exist (no exact or similar matches), create a new draft post with draft: true in data/tiny-house/
+Your workflow:
+1. FIRST: Use list_all_posts to get ALL existing blog posts with their titles, summaries, and tags
+2. ANALYZE: Compare the user's topic with all existing post titles and summaries
+3. DECIDE: Determine if any existing post is similar enough to the requested topic
+   - Consider semantic similarity, not just exact word matches
+   - "Wasser auffangen" is similar to "Wasser auffangen, Natur bewahren"
+   - Posts with overlapping keywords/concepts are likely related
+4. IF SIMILAR POST EXISTS:
+   - Use summarize_post to get details about the similar post
+   - Inform the user that a similar post already exists
+   - Provide the post title, summary, and path
+   - Do NOT create a new draft
+5. IF NO SIMILAR POST EXISTS:
+   - Create a new draft post with draft: true using create_draft
 
-IMPORTANT RULES:
-- Do NOT create a new draft if similar posts exist (>= 60% similarity) without first informing the user
-- When similar posts are found, list them with their similarity scores and suggest the user review them
-- Only create new drafts when there are truly no related posts, or when the user explicitly confirms despite similar posts existing
-- New posts are created directly in data/tiny-house/ (not in a drafts subfolder) with draft: true in frontmatter
+Important rules:
+- ALWAYS list all posts first before deciding
+- Use your AI intelligence to detect semantic similarity
+- Be conservative: if unsure, show the user existing posts rather than creating duplicates
+- New posts are created directly in data/tiny-house/ with draft: true in frontmatter
 
 Always be helpful and provide clear feedback about what you did.`,
       model: 'gpt-4',
-      tools: [checkDraftTool, summarizeDraftTool, createDraftTool],
+      tools: [listPostsTool, summarizeDraftTool, createDraftTool],
     })
 
     // Execute agent with the topic
     const result = await run(
       agent,
-      `Check if a blog post exists for the topic: "${topic}" in data/tiny-house/. If it exists, summarize it. If not, create a new draft post with draft: true.`
+      `The user wants to create a blog post about: "${topic}".
+
+First, list all existing posts and check if any are similar to this topic.
+If you find a similar post, tell the user about it and do NOT create a new draft.
+If no similar posts exist, create a new draft with draft: true.`
     )
 
     // Extract the agent's response from the final output
