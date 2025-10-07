@@ -18,7 +18,7 @@ import {
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const DRAFTS_DIR = path.join(process.cwd(), 'data/tiny-house/drafts')
+const POSTS_DIR = path.join(process.cwd(), 'data/tiny-house')
 
 // Initialize OpenAI client for content generation
 const openai = new OpenAI({
@@ -26,44 +26,44 @@ const openai = new OpenAI({
 })
 
 /**
- * Tool: Check if a draft exists for a given topic
+ * Tool: Check if a post exists for a given topic in data/tiny-house/
  */
 const checkDraftTool = tool({
-  name: 'check_draft',
-  description: 'Check if a draft MDX file exists for a given topic',
+  name: 'check_post',
+  description: 'Check if a blog post MDX file exists for a given topic in data/tiny-house/',
   parameters: z.object({
     topic: z.string().describe('The topic to check for'),
   }),
   execute: async ({ topic }: { topic: string }) => {
     const slug = slugify(topic)
-    const exists = draftExists(slug, DRAFTS_DIR)
+    const exists = draftExists(slug, POSTS_DIR)
 
     if (exists) {
-      const filePath = getDraftPath(slug, DRAFTS_DIR)
+      const filePath = getDraftPath(slug, POSTS_DIR)
       return {
         exists: true,
         slug,
         path: filePath,
-        message: `Draft exists at: ${filePath}`,
+        message: `Post exists at: ${filePath}`,
       }
     }
 
     return {
       exists: false,
       slug,
-      message: `No draft found for topic "${topic}"`,
+      message: `No post found for topic "${topic}"`,
     }
   },
 })
 
 /**
- * Tool: Summarize an existing draft
+ * Tool: Summarize an existing post
  */
 const summarizeDraftTool = tool({
-  name: 'summarize_draft',
-  description: 'Read and summarize an existing draft MDX file',
+  name: 'summarize_post',
+  description: 'Read and summarize an existing blog post MDX file',
   parameters: z.object({
-    path: z.string().describe('The file path to the draft'),
+    path: z.string().describe('The file path to the post'),
   }),
   execute: async ({ path: filePath }: { path: string }) => {
     try {
@@ -74,24 +74,24 @@ const summarizeDraftTool = tool({
         success: true,
         frontmatter,
         preview,
-        message: `Draft summary retrieved successfully`,
+        message: `Post summary retrieved successfully`,
       }
     } catch (error) {
       return {
         success: false,
-        message: `Failed to read draft: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to read post: ${error instanceof Error ? error.message : 'Unknown error'}`,
       }
     }
   },
 })
 
 /**
- * Tool: Create a new draft MDX file with AI-generated content
+ * Tool: Create a new draft MDX file with AI-generated content in data/tiny-house/
  */
 const createDraftTool = tool({
   name: 'create_draft',
   description:
-    'Create a new draft MDX file with AI-generated blog post content about Tiny House living',
+    'Create a new draft blog post with AI-generated content in data/tiny-house/ (with draft: true)',
   parameters: z.object({
     topic: z.string().describe('The topic/title of the draft'),
     summary: z.string().nullable().optional().describe('Optional summary of the draft'),
@@ -107,19 +107,19 @@ const createDraftTool = tool({
     tags?: string[] | null
   }) => {
     const slug = slugify(topic)
-    const filePath = getDraftPath(slug, DRAFTS_DIR)
+    const filePath = getDraftPath(slug, POSTS_DIR)
 
-    // Check if draft already exists
-    if (draftExists(slug, DRAFTS_DIR)) {
+    // Check if post already exists
+    if (draftExists(slug, POSTS_DIR)) {
       return {
         success: false,
-        message: `Draft already exists at: ${filePath}`,
+        message: `Post already exists at: ${filePath}`,
         path: filePath,
       }
     }
 
-    // Ensure drafts directory exists
-    ensureDir(DRAFTS_DIR)
+    // Ensure posts directory exists
+    ensureDir(POSTS_DIR)
 
     try {
       // Generate blog post content with GPT-4
@@ -155,24 +155,24 @@ Der Post sollte ca. 800-1200 Wörter haben und unsere praktischen Erfahrungen im
 
       const generatedContent = completion.choices[0]?.message?.content || ''
 
-      // Generate frontmatter
+      // Generate frontmatter with draft: true
       const frontmatter = generateFrontmatter({
         title: topic,
         summary: summary || '',
         tags: tags || [],
-        authors: ['Michi'],
+        authors: ['default'],
       })
 
       const content = `${frontmatter}
 ${generatedContent}
 `
 
-      // Write file
+      // Write file to data/tiny-house/
       fs.writeFileSync(filePath, content, 'utf-8')
 
       return {
         success: true,
-        message: `Draft with AI-generated content created successfully at: ${filePath}`,
+        message: `Draft with AI-generated content created successfully at: ${filePath} (draft: true)`,
         path: filePath,
         slug,
         wordCount: generatedContent.split(/\s+/).length,
@@ -210,13 +210,15 @@ export async function POST(req: Request) {
 
     // Initialize agent (uses OPENAI_API_KEY from environment)
     const agent = new Agent({
-      name: 'draft-agent',
-      instructions: `You are a helpful assistant that manages draft blog posts for a Tiny House blog.
+      name: 'blog-post-agent',
+      instructions: `You are a helpful assistant that manages blog posts for the KOKOMO Tiny House blog.
 
 Your tasks:
-1. Check if a draft exists for the given topic
-2. If it exists, provide a summary
-3. If it doesn't exist, create a new draft with appropriate frontmatter
+1. Check if a blog post exists for the given topic in data/tiny-house/
+2. If it exists, provide a summary with frontmatter details
+3. If it doesn't exist, create a new draft post with draft: true in data/tiny-house/
+
+Important: New posts are created directly in data/tiny-house/ (not in a drafts subfolder) with draft: true in frontmatter.
 
 Always be helpful and provide clear feedback about what you did.`,
       model: 'gpt-4',
@@ -226,7 +228,7 @@ Always be helpful and provide clear feedback about what you did.`,
     // Execute agent with the topic
     const result = await run(
       agent,
-      `Check if a draft exists for the topic: "${topic}". If it exists, summarize it. If not, create a new draft.`
+      `Check if a blog post exists for the topic: "${topic}" in data/tiny-house/. If it exists, summarize it. If not, create a new draft post with draft: true.`
     )
 
     // Extract the agent's response from the final output

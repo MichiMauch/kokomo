@@ -412,13 +412,15 @@ Response:
 
 ### Draft Location
 
-Drafts are stored in: `data/tiny-house/drafts/`
+Drafts are stored directly in: `data/tiny-house/`
 
 Each draft includes:
 
 - Frontmatter with: `title`, `date`, `tags`, `authors`, `summary`, `draft: true`, `images`, `type`
-- Default author: "Michi"
+- Default author: "default"
+- Type: "Blog"
 - Slugified filename based on topic
+- AI-generated content (800-1200 words)
 
 ### Architecture
 
@@ -426,9 +428,9 @@ Each draft includes:
 - **Utilities**: `lib/agentkit-utils.ts` - File operations and helpers
 - **Admin UI**: `app/admin/agentkit-drafts/page.tsx` - User interface
 - **Agent Tools**:
-  - `check_draft`: Verify draft existence
-  - `summarize_draft`: Read and preview drafts
-  - `create_draft`: Generate new draft files
+  - `check_post`: Searches existing posts in data/tiny-house/
+  - `summarize_post`: Reads and previews existing posts
+  - `create_draft`: Generates new draft posts with AI content (draft: true)
 
 ### Security Notes
 

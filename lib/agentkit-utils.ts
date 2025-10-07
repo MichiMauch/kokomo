@@ -28,7 +28,7 @@ export function generateFrontmatter(data: {
   tags?: string[]
   authors?: string[]
 }): string {
-  const { title, summary = '', tags = [], authors = ['Michi'] } = data
+  const { title, summary = '', tags = [], authors = ['default'] } = data
   const date = new Date().toISOString().split('T')[0]
 
   return `---
@@ -38,8 +38,8 @@ tags: [${tags.map((tag) => `'${tag}'`).join(', ')}]
 authors: [${authors.map((author) => `'${author}'`).join(', ')}]
 summary: '${summary}'
 draft: true
-images: []
-type: 'post'
+images: ''
+type: 'Blog'
 ---
 
 `
