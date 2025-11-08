@@ -110,13 +110,18 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Fehler beim Abrufen der Batteriedaten:', error.response?.data || error.message)
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+    const errorData =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: unknown } }).response?.data
+        : undefined
+    console.error('Fehler beim Abrufen der Batteriedaten:', errorData || errorMessage)
     // Festen Fallback-Wert verwenden statt zufällig (vermeidet Hydration-Probleme)
     return NextResponse.json({
       batteryCharge: 85,
       source: 'error-fallback',
       timestamp: new Date().toISOString(),
-      error: error.message || 'Unbekannter Fehler',
+      error: errorMessage,
     })
   }
 }

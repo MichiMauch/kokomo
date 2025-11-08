@@ -22,7 +22,7 @@ export default function EditPostPage() {
   useEffect(() => {
     const loadPost = async () => {
       try {
-        const res = await fetch(`../../../api/list-posts`)
+        const res = await fetch(`/admin/api/list-posts`)
         const data = await res.json()
         interface File {
           name: string
@@ -51,7 +51,7 @@ export default function EditPostPage() {
   const handleUpdate = async () => {
     setSaving(true)
     try {
-      const res = await fetch('../../../api/publish-post', {
+      const res = await fetch('/admin/api/publish-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

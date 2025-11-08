@@ -62,7 +62,8 @@ export default function Comments({ slug }: CommentsProps) {
         setIssueNumber(existingIssue.number)
         const fetchedComments = await getIssueComments(existingIssue.number)
         const parsedComments = await Promise.all(
-          fetchedComments.map((comment) => parseComment(comment))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          fetchedComments.map((comment: any) => parseComment(comment))
         )
         const validComments = parsedComments.filter(
           (comment): comment is NonNullable<ParsedComment> => comment !== null

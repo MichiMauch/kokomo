@@ -46,17 +46,13 @@ ${keywords.slice(0, 25).join(', ')}
 
       return NextResponse.json({ ideas })
     } catch (apiError) {
+      const apiErrorMsg = apiError instanceof Error ? apiError.message : 'Unbekannter Fehler'
       console.error('OpenAI API-Fehler:', apiError)
-      return NextResponse.json(
-        { error: `OpenAI API-Fehler: ${apiError.message || 'Unbekannter Fehler'}` },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: `OpenAI API-Fehler: ${apiErrorMsg}` }, { status: 500 })
     }
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler'
     console.error('Allgemeiner Fehler bei der Generierung:', error)
-    return NextResponse.json(
-      { error: `Fehler bei der Generierung: ${error.message || 'Unbekannter Fehler'}` },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: `Fehler bei der Generierung: ${errorMsg}` }, { status: 500 })
   }
 }

@@ -18,7 +18,7 @@ export async function GET() {
       return NextResponse.json(
         {
           error: 'Authentifizierung fehlgeschlagen',
-          message: error.message || 'Unbekannter Fehler',
+          message: error instanceof Error ? error.message : 'Unbekannter Fehler',
         },
         { status: 500 }
       )
@@ -48,13 +48,18 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Fehler bei der Debug-API:', error.response?.data || error.message)
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+    const errorData =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: unknown } }).response?.data
+        : undefined
+    console.error('Fehler bei der Debug-API:', errorData || errorMessage)
     return NextResponse.json(
       {
         success: false,
         error: 'API-Fehler',
-        message: error.message,
-        responseData: error.response?.data,
+        message: errorMessage,
+        responseData: errorData,
       },
       { status: 500 }
     )

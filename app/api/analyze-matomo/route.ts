@@ -46,6 +46,25 @@ type PageData = {
   avg_time_on_page: number
 }
 
+type EnrichedPage = {
+  title: string
+  views: {
+    current: number
+    previous: number
+    changePercent: number
+  }
+  bounce: {
+    current: number
+    previous: number
+    changePercent: number
+  }
+  duration: {
+    current: number
+    previous: number
+    changePercent: number
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -88,7 +107,7 @@ export async function POST(req: NextRequest) {
       fetchMatomoData('Actions.getExitPageTitles', 'range', rangePrev),
     ])
 
-    const enrichedPages = pagesCurrent
+    const enrichedPages: EnrichedPage[] = pagesCurrent
       .filter((p: PageData) => p.label)
       .map((p: PageData) => {
         const previous = pagesPrev.find((pp: PageData) => pp.label === p.label)

@@ -1,42 +1,73 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import path from 'path'
-import fs from 'fs'
+import fs from 'fs/promises'
 import OpenAI from 'openai'
 
 // Initialisiere OpenAI
 const openai = new OpenAI()
 
+// Types
+interface VectorDBItem {
+  title: string
+  slug: string
+  text: string
+  embedding: number[]
+}
+
+interface RelevantChunk extends VectorDBItem {
+  similarity: number
+}
+
+// In-Memory Cache für Vector DB (12 MB!)
+let vectorDBCache: VectorDBItem[] | null = null
+let isLoadingCache = false
+
 // Funktion zum Laden der Vektordatenbank (wird beim Build generiert)
-async function loadVectorDB() {
+async function loadVectorDB(): Promise<VectorDBItem[] | null> {
+  // Return cached version if available
+  if (vectorDBCache) return vectorDBCache
+
+  // Wait if already loading
+  if (isLoadingCache) {
+    while (isLoadingCache) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+    return vectorDBCache
+  }
+
+  isLoadingCache = true
   try {
     const dbPath = path.join(process.cwd(), 'public', 'static', 'vector-db.json')
-    if (!fs.existsSync(dbPath)) {
-      console.error('Vector database not found')
-      return null
-    }
-
-    const data = fs.readFileSync(dbPath, 'utf8')
-    return JSON.parse(data)
+    const data = await fs.readFile(dbPath, 'utf8')
+    vectorDBCache = JSON.parse(data) as VectorDBItem[]
+    console.log(`✅ Vector DB loaded and cached (${vectorDBCache.length} items)`)
+    return vectorDBCache
   } catch (error) {
     console.error('Error loading vector database:', error)
     return null
+  } finally {
+    isLoadingCache = false
   }
 }
 
 // Kosinus-Ähnlichkeit berechnen
-function cosineSimilarity(vecA, vecB) {
-  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0)
-  const magnitudeA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0))
-  const magnitudeB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0))
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  const dotProduct = vecA.reduce((sum: number, a: number, i: number) => sum + a * vecB[i], 0)
+  const magnitudeA = Math.sqrt(vecA.reduce((sum: number, a: number) => sum + a * a, 0))
+  const magnitudeB = Math.sqrt(vecB.reduce((sum: number, b: number) => sum + b * b, 0))
   return dotProduct / (magnitudeA * magnitudeB)
 }
 
 // Die relevantesten Textabschnitte finden
-function findRelevantChunks(userQueryEmbedding, vectorDB, topK = 3) {
+function findRelevantChunks(
+  userQueryEmbedding: number[],
+  vectorDB: VectorDBItem[],
+  topK = 3
+): RelevantChunk[] {
   if (!vectorDB || !vectorDB.length) return []
 
   // Berechne die Ähnlichkeit für jeden Chunk
-  const similarities = vectorDB.map((item) => ({
+  const similarities: RelevantChunk[] = vectorDB.map((item) => ({
     ...item,
     similarity: cosineSimilarity(userQueryEmbedding, item.embedding),
   }))
@@ -45,7 +76,7 @@ function findRelevantChunks(userQueryEmbedding, vectorDB, topK = 3) {
   return similarities.sort((a, b) => b.similarity - a.similarity).slice(0, topK)
 }
 
-export async function POST(req) {
+export async function POST(req: NextRequest) {
   try {
     const { query } = await req.json()
 

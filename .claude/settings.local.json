@@ -14,7 +14,11 @@
       "Bash(NODE_OPTIONS='--experimental-json-modules' npm run build)",
       "Bash(cat:*)",
       "Bash(gh pr create:*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(npm outdated:*)",
+      "Bash(du:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

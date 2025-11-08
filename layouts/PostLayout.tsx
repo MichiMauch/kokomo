@@ -12,8 +12,8 @@ import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import CommentsSection from '@/components/Comments'
 import AnimatedBackground from '@/components/animated-background' // Importiere die Hintergrund-Komponente
 
-const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
-const discussUrl = (path) =>
+const editUrl = (path: string) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
+const discussUrl = (path: string) =>
   `https://mobile.twitter.com/search?q=${encodeURIComponent(`${siteMetadata.siteUrl}/${path}`)}`
 
 const postDateTemplate: Intl.DateTimeFormatOptions = {
@@ -34,7 +34,7 @@ interface LayoutProps {
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
   const { filePath, path, slug, date, title, tags, images } = content
 
-  const isValidUrl = (urlString) => {
+  const isValidUrl = (urlString: string) => {
     try {
       return Boolean(new URL(urlString))
     } catch (e) {
