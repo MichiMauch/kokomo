@@ -1,5 +1,4 @@
 import type React from 'react'
-import Script from 'next/script'
 import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 import 'remark-github-blockquote-alert/alert.css'
@@ -130,6 +129,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Footer />
           </div>
         </ThemeProviders>
+
+        {/* Google RAG Chatbot - Popup Mode */}
+        <div
+          dangerouslySetInnerHTML={{
+            __html: `<script src="https://rag.mauch.rocks/widget.js" data-chat-name="kokomo-chat" data-mode="popup" data-position="bottom-right" data-theme="green" defer></script>`,
+          }}
+        />
       </body>
     </html>
   )
