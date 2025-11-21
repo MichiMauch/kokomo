@@ -1,12 +1,13 @@
-import { S3 } from 'aws-sdk'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { NextRequest, NextResponse } from 'next/server'
 
-const s3 = new S3({
+const s3Client = new S3Client({
   endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID,
-  secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY!,
+  },
   region: 'auto',
-  signatureVersion: 'v4',
 })
 
 export async function POST(req: NextRequest) {
@@ -22,15 +23,15 @@ export async function POST(req: NextRequest) {
   const filename = file.name
 
   try {
-    await s3
-      .putObject({
-        Bucket: process.env.CLOUDFLARE_BUCKET_2!,
-        Key: filename,
-        Body: buffer,
-        ContentType: 'image/webp',
-        ACL: 'public-read',
-      })
-      .promise()
+    const command = new PutObjectCommand({
+      Bucket: process.env.CLOUDFLARE_BUCKET_2!,
+      Key: filename,
+      Body: buffer,
+      ContentType: 'image/webp',
+      ACL: 'public-read',
+    })
+
+    await s3Client.send(command)
 
     const publicUrl = `https://pub-29ede69a4da644b9b81fa3dd5f8e9d6a.r2.dev/${filename}`
 

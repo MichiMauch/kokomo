@@ -49,3 +49,6 @@ yarn-error.log*
 
 # Contentlayer
 .contentlayer
+
+# Google Docs test output
+/temp
