@@ -40,17 +40,19 @@ export async function GET(request: Request) {
     const raw = await res.json()
 
     type MatomoResponse = Record<string, { nb_visits: number }>
-    const result = Object.entries(raw).map(([key, value]: [string, { nb_visits: number }]) => {
-      const date = new Date(key)
-      const label =
-        mode === 'monthly'
-          ? date.toLocaleString('de-CH', { month: 'short', year: 'numeric' })
-          : date.toLocaleDateString('de-CH', { day: '2-digit' }) // 👉 nur Tag
-      return {
-        label,
-        value: typeof value.nb_visits === 'number' ? value.nb_visits : 0,
+    const result = (Object.entries(raw) as [string, { nb_visits: number }][]).map(
+      ([key, value]) => {
+        const date = new Date(key)
+        const label =
+          mode === 'monthly'
+            ? date.toLocaleString('de-CH', { month: 'short', year: 'numeric' })
+            : date.toLocaleDateString('de-CH', { day: '2-digit' }) // 👉 nur Tag
+        return {
+          label,
+          value: typeof value.nb_visits === 'number' ? value.nb_visits : 0,
+        }
       }
-    })
+    )
 
     return NextResponse.json(result)
   } catch (error) {

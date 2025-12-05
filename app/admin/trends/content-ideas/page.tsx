@@ -3,8 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+type ContentSuggestion = {
+  id: number
+  title: string
+  description: string
+  trendKeywords: string
+  status: string
+}
+
 // Beispiel-Content-Vorschläge
-const EXAMPLE_SUGGESTIONS = [
+const EXAMPLE_SUGGESTIONS: ContentSuggestion[] = [
   {
     id: 1,
     title: 'Tiny House Finanzierung: Welche Banken bieten spezielle Kredite?',
@@ -31,12 +39,12 @@ const EXAMPLE_SUGGESTIONS = [
 ]
 
 export default function ContentIdeasPage() {
-  const [suggestions, setSuggestions] = useState(EXAMPLE_SUGGESTIONS)
-  const [selectedSuggestion, setSelectedSuggestion] = useState(null)
+  const [suggestions, setSuggestions] = useState<ContentSuggestion[]>(EXAMPLE_SUGGESTIONS)
+  const [selectedSuggestion, setSelectedSuggestion] = useState<ContentSuggestion | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Status für einen Content-Vorschlag ändern
-  const updateStatus = (id, newStatus) => {
+  const updateStatus = (id: number, newStatus: string) => {
     setSuggestions((prev) =>
       prev.map((suggestion) =>
         suggestion.id === id ? { ...suggestion, status: newStatus } : suggestion
@@ -45,7 +53,7 @@ export default function ContentIdeasPage() {
   }
 
   // Content-Vorschlag generieren (wird in Zukunft mit OpenAI API implementiert)
-  const generateContent = async (suggestionId) => {
+  const generateContent = async (suggestionId: number) => {
     setIsLoading(true)
     // In Zukunft: Hier API-Aufruf an OpenAI oder einen ähnlichen Dienst
 

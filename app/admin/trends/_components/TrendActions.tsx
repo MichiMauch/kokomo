@@ -28,7 +28,8 @@ export default function TrendActions() {
         setStatusType('error')
       }
     } catch (error) {
-      setStatusMessage(`Fehler bei der Initialisierung: ${error.message}`)
+      const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      setStatusMessage(`Fehler bei der Initialisierung: ${errorMsg}`)
       setStatusType('error')
     } finally {
       setIsLoading(false)
@@ -56,7 +57,8 @@ export default function TrendActions() {
         setStatusType('error')
       }
     } catch (error) {
-      setStatusMessage(`Fehler bei der Trendsammlung: ${error.message}`)
+      const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      setStatusMessage(`Fehler bei der Trendsammlung: ${errorMsg}`)
       setStatusType('error')
     } finally {
       setIsLoading(false)

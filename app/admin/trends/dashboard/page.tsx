@@ -47,7 +47,8 @@ export default function TrendsDashboard() {
       const data = await response.json()
       setTrends(data.trends || [])
     } catch (err) {
-      setError(err.message || 'Ein Fehler ist aufgetreten')
+      const errorMsg = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten'
+      setError(errorMsg)
       console.error('Fehler beim Laden der Trends:', err)
     } finally {
       setIsLoading(false)

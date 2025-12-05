@@ -67,7 +67,12 @@ async function getVictronToken() {
     console.log('Token erfolgreich generiert')
     return token
   } catch (error) {
-    console.error('Fehler beim Abrufen des Victron-Tokens:', error.response?.data || error.message)
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+    const errorData =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: unknown } }).response?.data
+        : undefined
+    console.error('Fehler beim Abrufen des Victron-Tokens:', errorData || errorMessage)
     throw error
   }
 }

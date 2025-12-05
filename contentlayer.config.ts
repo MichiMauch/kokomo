@@ -66,11 +66,14 @@ const computedFields: ComputedFields = {
 /**
  * Count the occurrences of all tags across blog posts and write to json file
  */
-async function createTagCount(allBlogs) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function createTagCount(allBlogs: any[]) {
   const tagCount: Record<string, number> = {}
-  allBlogs.forEach((file) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  allBlogs.forEach((file: any) => {
     if (file.tags && (!isProduction || file.draft !== true)) {
-      file.tags.forEach((tag) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      file.tags.forEach((tag: any) => {
         const formattedTag = slug(tag)
         if (formattedTag in tagCount) {
           tagCount[formattedTag] += 1
@@ -84,7 +87,8 @@ async function createTagCount(allBlogs) {
   writeFileSync('./app/tag-data.json', formatted)
 }
 
-function createSearchIndex(allBlogs) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createSearchIndex(allBlogs: any[]) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
     siteMetadata.search.kbarConfig.searchDocumentsPath

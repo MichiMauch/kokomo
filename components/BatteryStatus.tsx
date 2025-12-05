@@ -54,7 +54,8 @@ export default function BatteryStatus({ className = '' }) {
           setError('Keine Batteriedaten in der Antwort')
         }
       } catch (error) {
-        setError(`Fehler beim Laden: ${error.message}`)
+        const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler'
+        setError(`Fehler beim Laden: ${errorMsg}`)
 
         // Bei einem Fehler behalten wir den aktuellen Wert bei
       } finally {
