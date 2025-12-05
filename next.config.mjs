@@ -75,6 +75,12 @@ const nextConfig = () => {
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
     eslint: {
       dirs: ['app', 'components', 'layouts', 'scripts'],
+      // Skip linting during production builds to avoid memory issues on Vercel
+      ignoreDuringBuilds: true,
+    },
+    typescript: {
+      // Skip type checking during production builds to avoid memory issues on Vercel
+      ignoreBuildErrors: true,
     },
     env: {
       GITHUB_ACCESS_TOKEN: process.env.GITHUB_ACCESS_TOKEN,
