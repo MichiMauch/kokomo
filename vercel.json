@@ -1,8 +1,7 @@
 {
   "build": {
     "env": {
-      "NPM_CONFIG_PRODUCTION": "false",
-      "TURBOPACK": "0"
+      "NPM_CONFIG_PRODUCTION": "false"
     }
   },
   "redirects": [
