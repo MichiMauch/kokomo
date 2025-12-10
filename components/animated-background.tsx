@@ -1,28 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-
-// Detect iOS Safari
-function isIOSSafari(): boolean {
-  if (typeof window === 'undefined') return false
-  const ua = window.navigator.userAgent
-  const iOS = /iPad|iPhone|iPod/.test(ua)
-  const webkit = /WebKit/.test(ua)
-  const notChrome = !/CriOS/.test(ua)
-  return iOS && webkit && notChrome
-}
+import { useEffect, useRef } from 'react'
 
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [useStaticBackground, setUseStaticBackground] = useState(false)
 
   useEffect(() => {
-    // On iOS Safari, use static background for better compatibility
-    if (isIOSSafari()) {
-      setUseStaticBackground(true)
-      return
-    }
-
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -122,19 +105,6 @@ export default function AnimatedBackground() {
       window.removeEventListener('resize', setCanvasDimensions)
     }
   }, [])
-
-  // Static CSS gradient background for iOS Safari
-  if (useStaticBackground) {
-    return (
-      <div
-        className="fixed top-0 left-0 -z-10 h-full w-full"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(0, 178, 255, 0.8) 0%, rgba(0, 255, 127, 0.5) 50%, rgba(230, 194, 136, 0.8) 100%)',
-        }}
-      />
-    )
-  }
 
   return <canvas ref={canvasRef} className="fixed top-0 left-0 -z-10 h-full w-full" />
 }
