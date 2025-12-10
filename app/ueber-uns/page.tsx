@@ -3,7 +3,6 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import AuthorLayout from '@/layouts/AuthorLayout'
 import { coreContent } from 'pliny/utils/contentlayer'
 import { genPageMetadata } from 'app/seo'
-import AnimatedBackground from '@/components/animated-background'
 
 export const metadata = genPageMetadata({ title: 'About' })
 
@@ -13,8 +12,7 @@ export default function Page() {
 
   return (
     <>
-      <AnimatedBackground />
-      <div className="rounded-lg bg-white/95 p-6 text-gray-900 shadow-md backdrop-blur-sm">
+      <div className="rounded-lg bg-white p-6 text-gray-900 shadow-md">
         <AuthorLayout content={mainContent}>
           <MDXLayoutRenderer code={author.body.code} />
         </AuthorLayout>

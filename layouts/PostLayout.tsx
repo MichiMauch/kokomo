@@ -10,7 +10,6 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import CommentsSection from '@/components/Comments'
-import AnimatedBackground from '@/components/animated-background' // Importiere die Hintergrund-Komponente
 
 const editUrl = (path: string) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path: string) =>
@@ -46,10 +45,8 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
 
   return (
     <SectionContainer>
-      {/* Animierter Hintergrund */}
-      <AnimatedBackground />
       <ScrollTopAndComment />
-      <div className="rounded-lg bg-white/95 p-6 text-gray-900 shadow-md backdrop-blur-sm">
+      <div className="rounded-lg bg-white p-6 text-gray-900 shadow-md">
         {' '}
         {/* Wrapper mit transparentem Hintergrund */}
         <article>

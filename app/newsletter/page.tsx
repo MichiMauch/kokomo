@@ -3,7 +3,6 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import NewsletterLayout from '@/layouts/NewsletterLayout'
 import { coreContent } from 'pliny/utils/contentlayer'
 import { genPageMetadata } from 'app/seo'
-import AnimatedBackground from '@/components/animated-background'
 import mdxComponents from '@/components/MDXComponents'
 
 export const metadata = genPageMetadata({ title: 'Newsletter' })
@@ -14,9 +13,8 @@ export default function Page() {
 
   return (
     <>
-      <AnimatedBackground />
       {mainContent && (
-        <div className="rounded-lg bg-white/95 p-6 text-gray-900 shadow-md backdrop-blur-sm">
+        <div className="rounded-lg bg-white p-6 text-gray-900 shadow-md">
           <NewsletterLayout content={mainContent}>
             {newsletter && (
               <MDXLayoutRenderer code={newsletter.body.code} components={mdxComponents} />
