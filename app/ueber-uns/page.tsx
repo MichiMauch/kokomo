@@ -14,7 +14,7 @@ export default function Page() {
   return (
     <>
       <AnimatedBackground />
-      <div className="rounded-lg bg-white/70 p-6 shadow-md">
+      <div className="relative rounded-lg bg-white p-6 shadow-md" style={{ color: '#000000' }}>
         <AuthorLayout content={mainContent}>
           <MDXLayoutRenderer code={author.body.code} />
         </AuthorLayout>

@@ -16,7 +16,7 @@ export default function Page() {
     <>
       <AnimatedBackground />
       {mainContent && (
-        <div className="rounded-lg bg-white/70 p-6 shadow-md">
+        <div className="relative rounded-lg bg-white p-6 shadow-md" style={{ color: '#000000' }}>
           <NewsletterLayout content={mainContent}>
             {newsletter && (
               <MDXLayoutRenderer code={newsletter.body.code} components={mdxComponents} />

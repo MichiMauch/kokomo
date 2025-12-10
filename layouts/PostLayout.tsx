@@ -49,9 +49,9 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
       {/* Animierter Hintergrund */}
       <AnimatedBackground />
       <ScrollTopAndComment />
-      <div className="rounded-lg bg-white/70 p-6 shadow-md">
+      <div className="relative rounded-lg bg-white p-6 shadow-md" style={{ color: '#000000' }}>
         {' '}
-        {/* Wrapper mit transparentem Hintergrund */}
+        {/* Wrapper mit weissem Hintergrund und schwarzer Schrift */}
         <article>
           <div className="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-700">
             <header className="mx-auto pt-6 xl:max-w-screen-xl xl:pb-6">
