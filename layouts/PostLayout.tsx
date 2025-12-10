@@ -49,7 +49,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
       {/* Animierter Hintergrund */}
       <AnimatedBackground />
       <ScrollTopAndComment />
-      <div className="rounded-lg bg-white/95 p-6 shadow-md backdrop-blur-sm">
+      <div className="rounded-lg bg-white/95 p-6 text-gray-900 shadow-md backdrop-blur-sm">
         {' '}
         {/* Wrapper mit transparentem Hintergrund */}
         <article>
