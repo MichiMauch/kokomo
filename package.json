@@ -39,6 +39,7 @@
     "@types/mdx-js__react": "^1.5.8",
     "@uiw/react-md-editor": "^4.0.5",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/og": "^0.8.6",
     "apexcharts": "^4.5.0",
     "axios": "^1.9.0",
     "body-scroll-lock": "^4.0.0-beta.0",
