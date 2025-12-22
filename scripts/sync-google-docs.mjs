@@ -307,6 +307,7 @@ async function convertToMarkdown(htmlContent) {
  */
 function generateSlug(title) {
   return title
+    .normalize('NFC') // Normalize Unicode (decomposed → composed: u + ¨ → ü)
     .toLowerCase()
     .replace(/ä/g, 'ae')
     .replace(/ö/g, 'oe')

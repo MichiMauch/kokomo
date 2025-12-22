@@ -9,6 +9,7 @@ import { convertImageToWebP } from '@/lib/convertToWebP'
 import { toast } from 'sonner'
 import { Loader2, ClipboardCopy } from 'lucide-react'
 import MarkdownPreview from '@/components/MarkdownPreview'
+import { slugify } from '@/lib/slugify'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
 import { useSearchParams } from 'next/navigation'
@@ -79,10 +80,7 @@ const AdminEditor = () => {
       const TITLE_IMAGE_RATIO = 1024 / 528
       const MAX_WIDTH = 1000
       const webpBlob = await convertImageToWebP(imageFile, TITLE_IMAGE_RATIO, MAX_WIDTH)
-      const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
+      const slug = slugify(title)
       const filename = `${slug}-titelbild.webp`
       const formData = new FormData()
       formData.append('file', new File([webpBlob], filename, { type: 'image/webp' }))
@@ -149,7 +147,7 @@ const AdminEditor = () => {
 
   const handlePublish = async () => {
     setPublishing(true)
-    const filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.mdx`
+    const filename = `${slugify(title)}.mdx`
     try {
       const res = await fetch('/admin/api/publish-post', {
         method: 'POST',

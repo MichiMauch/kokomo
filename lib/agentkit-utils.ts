@@ -1,14 +1,10 @@
-import { slug } from 'github-slugger'
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
+import { slugify } from './slugify'
 
-/**
- * Generate a URL-safe slug from a topic string
- */
-export function slugify(topic: string): string {
-  return slug(topic)
-}
+// Re-export slugify for backwards compatibility
+export { slugify }
 
 /**
  * Ensure a directory exists, creating it if necessary
