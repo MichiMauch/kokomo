@@ -34,6 +34,7 @@ const AdminEditor = () => {
   const [uploadingMarkdownImage, setUploadingMarkdownImage] = useState(false)
   const [markdownPathSnippet, setMarkdownPathSnippet] = useState('')
   const [publishing, setPublishing] = useState(false)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
 
   const params = useSearchParams()
   const { draftData } = useMdxDraft()
@@ -172,6 +173,31 @@ const AdminEditor = () => {
     }
   }
 
+  const generateAISummary = async () => {
+    if (!title || !body) {
+      return toast.error('Titel und Inhalt werden benötigt')
+    }
+    setGeneratingSummary(true)
+    try {
+      const res = await fetch('/admin/api/generate-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: body }),
+      })
+
+      if (!res.ok) throw new Error('Fehler bei der Generierung')
+
+      const data = await res.json()
+      setSummary(data.summary)
+      toast.success('Zusammenfassung generiert')
+    } catch (error) {
+      console.error(error)
+      toast.error('KI-Generierung fehlgeschlagen')
+    } finally {
+      setGeneratingSummary(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
       <h1 className="text-2xl font-bold">📝 Blogpost Editor</h1>
@@ -182,7 +208,21 @@ const AdminEditor = () => {
         value={tags}
         onChange={(e) => setTags(e.target.value)}
       />
-      <Input placeholder="Summary" value={summary} onChange={(e) => setSummary(e.target.value)} />
+      <div className="flex gap-2">
+        <Input
+          placeholder="Summary"
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          className="flex-1"
+        />
+        <Button onClick={generateAISummary} disabled={generatingSummary} variant="outline">
+          {generatingSummary ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            '✨ AI Zusammenfassung'
+          )}
+        </Button>
+      </div>
 
       <div className="flex items-center gap-2">
         <input
