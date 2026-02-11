@@ -15,7 +15,8 @@
     "publish:all-docs": "node ./scripts/sync-google-docs.mjs --all",
     "preview:docs": "node ./scripts/sync-google-docs.mjs --preview",
     "test:docs": "node ./scripts/test-google-docs.mjs",
-    "test:doc": "node ./scripts/test-google-docs.mjs --title"
+    "test:doc": "node ./scripts/test-google-docs.mjs --title",
+    "update-summaries": "node ./scripts/update-summaries.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.937.0",

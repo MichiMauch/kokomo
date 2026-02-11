@@ -116,7 +116,7 @@ const BlogPost = ({ post, index }: { post: Post; index: number }) => {
         {/* Füge auf mobilen Geräten mehr Abstand zwischen den Elementen hinzu */}
         <div>
           <h2 className="mb-2 line-clamp-2 text-lg font-bold">{post.title}</h2>
-          <p className="line-clamp-4 text-sm text-gray-600">{post.summary}</p>
+          <p className="text-sm text-gray-600">{post.summary}</p>
         </div>
         <div className="mt-4">
           <button
