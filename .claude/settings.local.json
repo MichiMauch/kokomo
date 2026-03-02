@@ -18,7 +18,9 @@
       "Bash(npm outdated:*)",
       "Bash(du:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git reset --soft HEAD~1)",
+      "Bash(git stash && git pull && git stash pop)"
     ],
     "deny": [],
     "ask": []
